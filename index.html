@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>سیستم ثبت ورود و خروج</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding: 0;
+        }
+
+        .container {
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            max-width: 100%;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            padding: 16px;
+            padding-top: max(16px, env(safe-area-inset-top));
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* اجازه انتخاب متن فقط داخل فیلدهای ورودی */
+        input, select, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 13px;
+        }
+
+        #statusMessage {
+            flex-shrink: 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-info {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #3182ce;
+        }
+
+        .info-section {
+            background: #f0f7ff;
+            border-right: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        .info-section p {
+            color: #333;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .time-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .employee-section {
+            margin-bottom: 14px;
+        }
+
+        .employee-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="tel"], select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px; /* جلوگیری از زوم خودکار iOS هنگام فوکوس */
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus, input[type="tel"]:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .records-section {
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .records-section h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        #recordsList {
+            max-height: none;
+        }
+
+        .record-day-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-right: 4px solid #667eea;
+        }
+
+        .day-header {
+            margin-bottom: 12px;
+        }
+
+        .day-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            margin: 0 0 3px 0;
+        }
+
+        .day-id {
+            font-size: 12px;
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .day-date {
+            font-size: 12px;
+            color: #999;
+            margin: 2px 0;
+        }
+
+        .time-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .time-column {
+            background: white;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #eee;
+        }
+
+        .time-column.checkin-column {
+            border-color: #48bb78;
+        }
+
+        .time-column.checkout-column {
+            border-color: #f56565;
+        }
+
+        .column-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .checkin-column .column-header {
+            color: #48bb78;
+        }
+
+        .checkout-column .column-header {
+            color: #f56565;
+        }
+
+        .column-time {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-delete-day {
+            background: #fc8181;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-delete-day:hover {
+            background: #f56565;
+        }
+
+        .overtime-section {
+            background: #fff5f5;
+            border-right: 4px solid #f56565;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .overtime-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #fed7d7;
+            font-size: 14px;
+        }
+
+        .overtime-item:last-child {
+            border-bottom: none;
+        }
+
+        .overtime-name {
+            font-weight: 600;
+            color: #c53030;
+        }
+
+        .overtime-hours {
+            color: #c53030;
+            font-weight: 600;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        .status-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 10px;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            min-height: 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .employee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 40vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .employee-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-right: 4px solid #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .employee-item:hover {
+            background: #f0f7ff;
+            transform: translateX(-5px);
+        }
+
+        .employee-item.active {
+            background: #e0ecff;
+            border-right-color: #667eea;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .employee-id {
+            font-size: 12px;
+            color: #666;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                border-radius: 0;
+                padding: 12px;
+                padding-top: max(12px, env(safe-area-inset-top));
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+            }
+
+            button {
+                padding: 10px 12px;
+                font-size: 13px;
+                min-width: 90px;
+            }
+
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .tab-btn {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+        }
+
+        /* طراحی برای حالت عمودی */
+        @media (orientation: landscape) {
+            .container {
+                max-width: 480px;
+                margin: 0 auto;
+            }
+        }
+
+        /* جلوگیری از کشیدن صفحه در iOS */
+        body {
+            -webkit-overflow-scrolling: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 سیستم ثبت ورود و خروج</h1>
+            <p>محاسبه اضافه کار هوشمند</p>
+        </div>
+
+        <div id="statusMessage"></div>
+
+        <!-- صفحه ثبت‌نام -->
+        <div id="registerScreen" class="screen active">
+            <div class="employee-section">
+                <label for="firstName">نام:</label>
+                <input type="text" id="firstName" placeholder="نام خود را وارد کنید">
+                
+                <label for="lastName">نام خانوادگی:</label>
+                <input type="text" id="lastName" placeholder="نام خانوادگی خود را وارد کنید">
+                
+                <label for="registerPersonnelId">شماره پرسنلی:</label>
+                <input type="tel" id="registerPersonnelId" placeholder="شماره پرسنلی را وارد کنید" inputmode="numeric" pattern="[0-9]*" maxlength="10">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-success" id="registerBtn">✓ ثبت نام</button>
+            </div>
+        </div>
+
+        <!-- صفحه اصلی -->
+        <div id="mainScreen" class="screen">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="checkin">ثبت ورود/خروج</button>
+                <button class="tab-btn" data-tab="records">سوابق</button>
+                <button class="tab-btn" data-tab="overtime">اضافه کار</button>
+            </div>
+
+            <!-- TAB 1: Check-in -->
+            <div id="checkin" class="tab-content active">
+                <div class="info-section" id="userInfoBox">
+                    <p style="font-weight: 600; color: #333; font-size: 16px;" id="userFullName">—</p>
+                    <p style="font-size: 13px; color: #666;" id="userPersonnelId">شماره پرسنلی: —</p>
+                </div>
+
+                <div class="info-section">
+                    <p class="time-display" id="currentTime"></p>
+                    <p id="dateDisplay"></p>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-success" id="checkInBtn">✓ ورود</button>
+                    <button class="btn-danger" id="checkOutBtn">✕ خروج</button>
+                </div>
+            </div>
+
+            <!-- TAB 2: Records -->
+            <div id="records" class="tab-content">
+                <div class="records-section">
+                    <h3>📋 سوابق ورود و خروج</h3>
+                    <div class="button-group" style="margin-bottom: 15px;">
+                        <button class="btn-danger" id="clearRecords">🗑️ پاک کردن همه</button>
+                    </div>
+                    <div id="recordsList"></div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Overtime -->
+            <div id="overtime" class="tab-content">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn-info" id="calculateBtn" style="flex: 1;">🧮 محاسبه اضافه کار</button>
+                </div>
+                <div id="overtimeList" class="overtime-section" style="display: none;">
+                    <h3 style="color: #c53030; margin-bottom: 15px;">⏱️ اضافه کار کارکنان</h3>
+                    <div id="overtimeContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ متغیرهای سراسری ============
+        const BALE_TOKEN = '666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
+        const BALE_CHAT_ID = '1163569220';
+        const BALE_API = `https://tapi.bale.ai/bot${BALE_TOKEN}`;
+
+        // مهاجرت از نسخه چندکاربره قبلی (اگر وجود داشت)
+        (function migrateOldData() {
+            if (!localStorage.getItem('currentEmployee')) {
+                const old = JSON.parse(localStorage.getItem('employees') || '[]');
+                if (old.length > 0) {
+                    localStorage.setItem('currentEmployee', JSON.stringify(old[0]));
+                }
+            }
+        })();
+
+        let currentEmployee = JSON.parse(localStorage.getItem('currentEmployee') || 'null');
+
+        // ============ ارسال به ربات بله ============
+        async function sendToBale(text) {
+            const params = new URLSearchParams({
+                chat_id: BALE_CHAT_ID,
+                text: text
+            });
+            const apiUrl = `${BALE_API}/sendMessage?${params.toString()}`;
+
+            // روش ۱: درخواست GET ساده (مرورگر درخواست را می‌فرستد)
+            try {
+                await fetch(apiUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+            } catch (e) {
+                console.warn('fetch no-cors:', e);
+            }
+
+            // روش ۲: Image beacon — مطمئن می‌شود درخواست ارسال شود
+            try {
+                const img = new Image();
+                img.src = apiUrl + '&_t=' + Date.now();
+            } catch (e) {
+                console.warn('img beacon:', e);
+            }
+
+            // روش ۳: پروکسی CORS (اگر روش‌های بالا کافی نبود)
+            try {
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(apiUrl);
+                const res = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json().catch(() => null);
+                    if (data && data.ok) return true;
+                }
+            } catch (e) {
+                console.warn('proxy:', e);
+            }
+
+            // درخواست‌ها ارسال شده‌اند؛ پاسخ ممکن است به‌خاطر CORS خوانده نشود
+            return true;
+        }
+
+        // ============ ثبت کارمند (فقط بار اول) ============
+        document.getElementById('registerBtn').addEventListener('click', async () => {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const personnelId = document.getElementById('registerPersonnelId').value.trim();
+
+            if (!firstName || !lastName) {
+                showStatus('لطفاً نام و نام خانوادگی را وارد کنید', 'error');
+                return;
+            }
+
+            if (!personnelId) {
+                showStatus('لطفاً شماره پرسنلی را وارد کنید', 'error');
+                return;
+            }
+
+            currentEmployee = {
+                id: Date.now(),
+                firstName,
+                lastName,
+                personnelId,
+                fullName: `${firstName} ${lastName}`
+            };
+
+            localStorage.setItem('currentEmployee', JSON.stringify(currentEmployee));
+
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            document.getElementById('registerPersonnelId').value = '';
+
+            showStatus(`✓ ${currentEmployee.fullName} ثبت شد`, 'success');
+
+            // اطلاع ثبت‌نام به بله
+            await sendToBale(
+                `✅ ثبت‌نام جدید\n` +
+                `👤 نام: ${currentEmployee.fullName}\n` +
+                `🔢 پرسنلی: ${currentEmployee.personnelId}\n` +
+                `📅 ${new Date().toLocaleDateString('fa-IR')} - ${new Date().toLocaleTimeString('fa-IR')}`
+            );
+
+            loadMainScreen();
+        });
+
+        // ============ بارگذاری صفحه اصلی ============
+        function loadMainScreen() {
+            currentEmployee = JSON.parse(localStorage.getItem('currentEmployee') || 'null');
+
+            if (!currentEmployee) {
+                document.getElementById('registerScreen').classList.add('active');
+                document.getElementById('mainScreen').classList.remove('active');
+            } else {
+                document.getElementById('registerScreen').classList.remove('active');
+                document.getElementById('mainScreen').classList.add('active');
+                updateUserInfo();
+            }
+        }
+
+        function updateUserInfo() {
+            if (!currentEmployee) return;
+            document.getElementById('userFullName').textContent = currentEmployee.fullName;
+            document.getElementById('userPersonnelId').textContent = 'شماره پرسنلی: ' + currentEmployee.personnelId;
+        }
+
+        // ============ تابع نمایش ساعت ============
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('dateDisplay').textContent = 
+                now.toLocaleDateString('fa-IR', options);
+        }
+
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // ============ بررسی ثبت تکراری ============
+        function checkDuplicateEntry(employeeId, type) {
+            const records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            const today = new Date().toLocaleDateString('fa-IR');
+            
+            const duplicate = records.find(r => 
+                r.employeeId === employeeId && 
+                r.date === today && 
+                r.type === type
+            );
+            
+            return duplicate ? true : false;
+        }
+
+        // ============ ثبت ورود و خروج ============
+        async function recordAttendance(type) {
+            if (!currentEmployee) {
+                showStatus('ابتدا مشخصات خود را ثبت کنید', 'error');
+                loadMainScreen();
+                return;
+            }
+
+            if (checkDuplicateEntry(currentEmployee.id, type)) {
+                const typeText = type === 'checkin' ? 'ورود' : 'خروج';
+                showStatus(`⚠️ ثبت تکراری! امروز قبلاً ${typeText} کرده‌اید`, 'error');
+                return;
+            }
+
+            const record = {
+                id: Date.now(),
+                employeeId: currentEmployee.id,
+                name: currentEmployee.fullName,
+                personnelId: currentEmployee.personnelId,
+                type: type,
+                time: new Date().toLocaleTimeString('fa-IR'),
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleDateString('fa-IR')
+            };
+
+            let records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            records.push(record);
+            localStorage.setItem('attendanceRecords', JSON.stringify(records));
+
+            const typeText = type === 'checkin' ? 'ورود' : 'خروج';
+            const emoji = type === 'checkin' ? '🟢' : '🔴';
+            showStatus(`✓ ${typeText} ثبت شد - ${record.time}`, 'success');
+            displayRecords();
+
+            // ارسال به ربات بله
+            const sent = await sendToBale(
+                `${emoji} ${typeText}\n` +
+                `👤 نام: ${currentEmployee.fullName}\n` +
+                `🔢 پرسنلی: ${currentEmployee.personnelId}\n` +
+                `🕐 ساعت: ${record.time}\n` +
+                `📅 تاریخ: ${record.date}`
+            );
+            if (!sent) {
+                showStatus('ثبت شد، اما ارسال به بله ناموفق بود', 'info');
+            }
+        }
+
+        document.getElementById('checkInBtn').addEventListener('click', () => recordAttendance('checkin'));
+        document.getElementById('checkOutBtn').addEventListener('click', () => recordAttendance('checkout'));
+
+        // ============ نمایش سوابق ============
+        function displayRecords() {
+            const records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            
+            if (records.length === 0) {
+                document.getElementById('recordsList').innerHTML = '<p style="text-align: center; color: #999;">هنوز سابقه‌ای ثبت نشده</p>';
+                return;
+            }
+
+            // گروپ‌بندی سوابق بر اساس نام و تاریخ
+            const grouped = {};
+            records.forEach(record => {
+                const key = `${record.employeeId}_${record.date}`;
+                if (!grouped[key]) {
+                    grouped[key] = { 
+                        name: record.name, 
+                        personnelId: record.personnelId,
+                        date: record.date,
+                        dayName: '',
+                        checkinTime: '',
+                        checkoutTime: ''
+                    };
+                }
+                
+                const date = new Date(record.timestamp);
+                const dayNames = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
+                grouped[key].dayName = dayNames[date.getDay()];
+                
+                if (record.type === 'checkin') {
+                    grouped[key].checkinTime = record.time;
+                } else {
+                    grouped[key].checkoutTime = record.time;
+                }
+            });
+
+            // نمایش سوابق
+            const sortedGroups = Object.entries(grouped).sort((a, b) => {
+                return new Date(b[1].date) - new Date(a[1].date);
+            });
+
+            document.getElementById('recordsList').innerHTML = sortedGroups.map(([key, group]) => `
+                <div class="record-day-item">
+                    <div class="day-header">
+                        <div>
+                            <p class="day-name">${group.name}</p>
+                            <p class="day-id">شماره پرسنلی: ${group.personnelId}</p>
+                            <p class="day-date">${group.dayName} - ${group.date}</p>
+                        </div>
+                    </div>
+                    <div class="time-columns">
+                        <div class="time-column checkin-column">
+                            <div class="column-header">✓ ورود</div>
+                            <div class="column-time">${group.checkinTime || '-'}</div>
+                        </div>
+                        <div class="time-column checkout-column">
+                            <div class="column-header">✕ خروج</div>
+                            <div class="column-time">${group.checkoutTime || '-'}</div>
+                        </div>
+                    </div>
+                    <button class="btn-delete-day" onclick="deleteDay('${key}')">حذف این روز</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteDay(key) {
+            const records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            const parts = key.split('_');
+            const date = parts[parts.length - 1];
+            const employeeId = parts[0];
+            const filtered = records.filter(r => !(r.employeeId == employeeId && r.date === date));
+            localStorage.setItem('attendanceRecords', JSON.stringify(filtered));
+            displayRecords();
+            showStatus('روز حذف شد', 'success');
+        }
+
+        // ============ محاسبه اضافه کار ============
+        document.getElementById('calculateBtn').addEventListener('click', calculateOvertime);
+
+        function calculateOvertime() {
+            const records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            
+            if (records.length === 0) {
+                showStatus('سابقه‌ای برای محاسبه وجود ندارد', 'error');
+                return;
+            }
+
+            // گروپ‌بندی سوابق بر اساس نام و تاریخ
+            const grouped = {};
+            records.forEach(record => {
+                const key = `${record.employeeId}_${record.date}`;
+                if (!grouped[key]) {
+                    grouped[key] = { 
+                        name: record.name, 
+                        date: record.date, 
+                        times: [],
+                        dayOfWeek: new Date(record.timestamp).getDay()
+                    };
+                }
+                grouped[key].times.push({
+                    type: record.type,
+                    timestamp: new Date(record.timestamp),
+                    time: record.time
+                });
+            });
+
+            // محاسبه اضافه کار
+            const overtime = {};
+            Object.values(grouped).forEach(group => {
+                const checkins = group.times.filter(t => t.type === 'checkin');
+                const checkouts = group.times.filter(t => t.type === 'checkout');
+
+                if (checkins.length === 0 || checkouts.length === 0) return;
+
+                const firstCheckin = checkins[0].timestamp;
+                const lastCheckout = checkouts[checkouts.length - 1].timestamp;
+
+                const dayOfWeek = group.dayOfWeek;
+                let overtimeHours = 0;
+
+                const checkinHour = firstCheckin.getHours();
+                const checkinMin = firstCheckin.getMinutes();
+                const checkoutHour = lastCheckout.getHours();
+                const checkoutMin = lastCheckout.getMinutes();
+
+                // شرط اول: ورود قبل از 7 و خروج بعد از 16:30
+                if (checkinHour < 7 && checkoutHour > 16 && (checkoutHour === 16 ? checkoutMin >= 30 : true)) {
+                    const diffMs = lastCheckout - firstCheckin;
+                    overtimeHours = (diffMs / (1000 * 60 * 60)) - 9;
+                }
+
+                // شرط چهارشنبه: از 15:30 اضافه کار
+                if (dayOfWeek === 3) {
+                    if (checkoutHour > 15 || (checkoutHour === 15 && checkoutMin >= 30)) {
+                        overtimeHours += (checkoutHour - 15) + (checkoutMin / 60) - 0.5;
+                    }
+                }
+
+                // شرط پنج‌شنبه: از 7 تا 17
+                if (dayOfWeek === 4) {
+                    const checkinTime = checkinHour + checkinMin / 60;
+                    const checkoutTime = checkoutHour + checkoutMin / 60;
+                    
+                    const startTime = Math.max(checkinTime, 7);
+                    const endTime = Math.min(checkoutTime, 17);
+                    
+                    if (startTime < endTime) {
+                        overtimeHours = endTime - startTime;
+                    }
+                }
+
+                if (overtimeHours > 0) {
+                    const key = group.name;
+                    overtime[key] = (overtime[key] || 0) + Math.round(overtimeHours * 100) / 100;
+                }
+            });
+
+            displayOvertime(overtime);
+        }
+
+        function displayOvertime(overtime) {
+            const overtimeList = document.getElementById('overtimeList');
+            const overtimeContent = document.getElementById('overtimeContent');
+
+            if (Object.keys(overtime).length === 0) {
+                overtimeContent.innerHTML = '<p style="text-align: center; color: #999;">اضافه کاری ثبت نشده</p>';
+                overtimeList.style.display = 'block';
+                showStatus('هیچ اضافه‌کاری یافت نشد', 'info');
+                return;
+            }
+
+            overtimeContent.innerHTML = Object.entries(overtime).map(([name, hours]) => `
+                <div class="overtime-item">
+                    <span class="overtime-name">${name}</span>
+                    <span class="overtime-hours">${hours.toFixed(2)} ساعت</span>
+                </div>
+            `).join('');
+
+            overtimeList.style.display = 'block';
+            showStatus('اضافه کار محاسبه شد', 'success');
+        }
+
+        // ============ تابع نمایش پیام ============
+        function showStatus(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+            setTimeout(() => {
+                statusMessage.innerHTML = '';
+            }, 4000);
+        }
+
+        // ============ تب‌ها ============
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                e.target.classList.add('active');
+                const tabName = e.target.getAttribute('data-tab');
+                document.getElementById(tabName).classList.add('active');
+
+                if (tabName === 'records') {
+                    displayRecords();
+                }
+            });
+        });
+
+        // ============ پاک کردن همه ============
+        document.getElementById('clearRecords').addEventListener('click', () => {
+            if (confirm('آیا مطمئن هستید؟ این عمل برگشت‌ناپذیر است')) {
+                localStorage.removeItem('attendanceRecords');
+                displayRecords();
+                showStatus('تمام سوابق حذف شدند', 'success');
+            }
+        });
+
+        // ============ جلوگیری از زوم با ژست چندانگشتی ============
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // ============ بارگیری اولیه ============
+        loadMainScreen();
+    </script>
+</body>
+</html>
