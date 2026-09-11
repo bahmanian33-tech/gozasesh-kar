@@ -119,15 +119,98 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=e=>{
 document.getElementById('clearRecords').onclick=()=>{if(confirm('مطمئن هستید؟')){localStorage.removeItem('attendanceRecords');displayRecords();showStatus('سوابق حذف شد','success');}};
 
 let audioCtx=null;
-function ensureAudio(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){}return audioCtx;}
-function playAlarmBeep(){const ctx=ensureAudio();if(!ctx){showStatus('صدا فعال نشد — یک‌بار روی صفحه بزنید','error');return;}const t0=ctx.currentTime;[0,0.4,0.8].forEach(function(delay){const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=980;g.gain.setValueAtTime(0.001,t0+delay);g.gain.exponentialRampToValueAtTime(0.3,t0+delay+0.03);g.gain.exponentialRampToValueAtTime(0.001,t0+delay+0.28);o.connect(g);g.connect(ctx.destination);o.start(t0+delay);o.stop(t0+delay+0.32);});}
-function notifyReminder(title,body){playAlarmBeep();showStatus('🔔 '+body,'info');if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:body,tag:'att-rem',renotify:true});}catch(e){}}}
-function dayKey(){const n=new Date();return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();}
-function checkReminders(){const now=new Date();const h=now.getHours(),m=now.getMinutes();const dk=dayKey();
-if((h===6&&m>=58)||(h===7&&m<=2)){const key='morning_'+dk;if(!localStorage.getItem(key)){localStorage.setItem(key,'1');notifyReminder('یادآوری ورود','ساعت ۶:۵۸ — لطفاً ورود را ثبت کنید');}}
-if(h>16||(h===16&&m>=30)){if(m<=1||(m>=30&&m<=31)){const slotMin=(m<15)?0:30;const key='eve_'+dk+'_'+h+'_'+slotMin;if(!localStorage.getItem(key)){localStorage.setItem(key,'1');const mm=slotMin===0?'00':'30';const hh=(h<10?'0':'')+h;notifyReminder('یادآوری خروج','ساعت '+hh+':'+mm+' — لطفاً خروج را ثبت کنید');}}}}
-function setupTestAlarmBtn(){const checkin=document.getElementById('checkin');if(!checkin||document.getElementById('testAlarmBtn'))return;const wrap=document.createElement('div');wrap.style.cssText='margin-top:16px;text-align:center';const btn=document.createElement('button');btn.id='testAlarmBtn';btn.className='btn-info';btn.textContent='🔔 تست صدای هشدار';btn.type='button';btn.onclick=function(){ensureAudio();playAlarmBeep();showStatus('اگر صدا شنیدید، هشدار فعال است','success');if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();};wrap.appendChild(btn);checkin.appendChild(wrap);}
-function startReminderLoop(){if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().catch(function(){});}function unlock(){ensureAudio();document.removeEventListener('click',unlock);document.removeEventListener('touchstart',unlock);}document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);setupTestAlarmBtn();checkReminders();setInterval(checkReminders,10000);}
+function ensureAudio(){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+  }catch(e){}
+  return audioCtx;
+}
+function playAlarmBeep(){
+  const ctx=ensureAudio();
+  if(!ctx){showStatus('صدا فعال نشد — یک‌بار روی صفحه بزنید','error');return;}
+  const t0=ctx.currentTime;
+  [0,0.4,0.8].forEach(function(delay){
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='square'; o.frequency.value=980;
+    g.gain.setValueAtTime(0.001, t0+delay);
+    g.gain.exponentialRampToValueAtTime(0.3, t0+delay+0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+delay+0.28);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t0+delay); o.stop(t0+delay+0.32);
+  });
+}
+function notifyReminder(title, body){
+  playAlarmBeep();
+  showStatus('🔔 '+body, 'info');
+  if('Notification' in window && Notification.permission==='granted'){
+    try{ new Notification(title,{body:body, tag:'att-rem', renotify:true}); }catch(e){}
+  }
+}
+function dayKey(){
+  const n=new Date();
+  return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
+}
+function checkReminders(){
+  const now=new Date();
+  const h=now.getHours(), m=now.getMinutes();
+  const dk=dayKey();
+  if((h===6 && m>=58) || (h===7 && m<=2)){
+    const key='morning_'+dk;
+    if(!localStorage.getItem(key)){
+      localStorage.setItem(key,'1');
+      notifyReminder('یادآوری ورود','ساعت ۶:۵۸ — لطفاً ورود را ثبت کنید');
+    }
+  }
+  if(h>16 || (h===16 && m>=30)){
+    if(m<=1 || (m>=30 && m<=31)){
+      const slotMin = (m<15) ? 0 : 30;
+      const key='eve_'+dk+'_'+h+'_'+slotMin;
+      if(!localStorage.getItem(key)){
+        localStorage.setItem(key,'1');
+        const mm = slotMin===0 ? '00' : '30';
+        const hh = (h<10?'0':'')+h;
+        notifyReminder('یادآوری خروج','ساعت '+hh+':'+mm+' — لطفاً خروج را ثبت کنید');
+      }
+    }
+  }
+}
+function setupTestAlarmBtn(){
+  const checkin=document.getElementById('checkin');
+  if(!checkin || document.getElementById('testAlarmBtn')) return;
+  const wrap=document.createElement('div');
+  wrap.style.cssText='margin-top:16px;text-align:center';
+  const btn=document.createElement('button');
+  btn.id='testAlarmBtn';
+  btn.className='btn-info';
+  btn.textContent='🔔 تست صدای هشدار';
+  btn.type='button';
+  btn.onclick=function(){
+    ensureAudio();
+    playAlarmBeep();
+    showStatus('اگر صدا شنیدید، هشدار فعال است', 'success');
+    if('Notification' in window && Notification.permission==='default'){
+      Notification.requestPermission();
+    }
+  };
+  wrap.appendChild(btn);
+  checkin.appendChild(wrap);
+}
+function startReminderLoop(){
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission().catch(function(){});
+  }
+  function unlock(){ ensureAudio(); document.removeEventListener('click',unlock); document.removeEventListener('touchstart',unlock); }
+  document.addEventListener('click', unlock);
+  document.addEventListener('touchstart', unlock);
+  setupTestAlarmBtn();
+  checkReminders();
+  setInterval(checkReminders, 10000);
+}
 startReminderLoop();
 loadMainScreen();
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').then(function(reg){reg.update();}).catch(function(){});});}
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').then(function(reg){ reg.update(); }).catch(function(){});
+  });
+}
