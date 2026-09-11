@@ -13,9 +13,53 @@
     <link rel="icon" type="image/svg+xml" href="icon-192.svg">
     <link rel="stylesheet" href="styles.css">
     <title>سیستم ثبت ورود و خروج</title>
+    <style>
+      #installOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 28px 20px;
+        text-align: center;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+      }
+      #installOverlay.show { display: flex; }
+      #installOverlay h2 { font-size: 22px; margin-bottom: 12px; }
+      #installOverlay p { font-size: 15px; line-height: 1.8; opacity: 0.95; max-width: 340px; margin-bottom: 24px; }
+      #installOverlay .install-btn {
+        background: #fff;
+        color: #667eea;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        min-width: 200px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      }
+      #installOverlay .hint {
+        margin-top: 18px;
+        font-size: 13px;
+        opacity: 0.85;
+        max-width: 320px;
+      }
+    </style>
 </head>
 <body>
-    <div class="container">
+    <div id="installOverlay">
+        <h2>📱 نصب برنامه</h2>
+        <p>برای استفاده، برنامه را مثل اپ اندروید روی گوشی نصب کنید. بعد از نصب فقط از آیکون صفحه اصلی باز کنید.</p>
+        <button type="button" class="install-btn" id="installAppBtn">نصب برنامه</button>
+        <p class="hint" id="installHint">اگر دکمه کار نکرد: منوی کروم ⋮ ← Install app یا «نصب برنامه»</p>
+    </div>
+
+    <div class="container" id="appRoot">
         <div class="header">
             <h1>📱 سیستم ثبت ورود و خروج</h1>
             <p>محاسبه اضافه کار هوشمند</p>
@@ -74,6 +118,7 @@
             </div>
         </div>
     </div>
+    <script src="install.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

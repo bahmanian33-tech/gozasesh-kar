@@ -1,12 +1,10 @@
-const CACHE_NAME = 'attendance-v6';
-const ASSETS = ['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icon-192.svg','./icon-512.svg','./apple-touch-icon.svg'];
+const CACHE_NAME = 'attendance-v7';
+const ASSETS = ['./','./index.html','./styles.css','./app.js','./install.js','./manifest.webmanifest','./icon-192.svg','./icon-512.svg','./apple-touch-icon.svg'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())
-  );
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
   const url = e.request.url;
@@ -14,8 +12,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(e.request).catch(() => new Response('{"ok":false}',{headers:{'Content-Type':'application/json'}})));
     return;
   }
-  // همیشه app.js را از شبکه بگیر تا نسخه جدید بیاید
-  if (url.includes('app.js')) {
+  if (url.includes('app.js') || url.includes('install.js') || url.includes('index.html')) {
     e.respondWith(fetch(e.request).then(res => {
       const copy = res.clone();
       caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
