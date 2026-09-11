@@ -53,12 +53,11 @@ function setupInstallUI() {
       } else {
         const hint = document.getElementById('installHint');
         if (hint) {
-          hint.textContent = 'منوی کروم (⋮) → Install app / نصب برنامه. اگر نبود چند ثانیه صبر کنید و دوباره بزنید.';
+          hint.textContent = 'منوی کروم (⋮) → Install app / نصب برنامه را بزنید. اگر نبود، چند ثانیه صبر کنید و دوباره تلاش کنید.';
         }
       }
     });
   }
-
   if (isAndroid() && !isStandalone()) {
     showInstallOverlay();
   } else {
