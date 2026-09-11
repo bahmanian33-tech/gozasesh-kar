@@ -1,10 +1,12 @@
-const CACHE_NAME = 'attendance-v1';
+const CACHE_NAME = 'attendance-v2';
 const ASSETS = [
   './',
   './index.html',
+  './styles.css',
+  './app.js',
   './manifest.webmanifest',
-  './icon-192.svg', './icon-192.png',
-  './icon-512.svg', './icon-512.png',
+  './icon-192.svg',
+  './icon-512.svg',
   './apple-touch-icon.svg'
 ];
 
@@ -25,7 +27,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
-  // درخواست‌های API بله را کش نکن
   if (url.includes('tapi.bale.ai') || url.includes('corsproxy.io')) {
     event.respondWith(fetch(event.request).catch(() => new Response('{"ok":false}', {
       headers: { 'Content-Type': 'application/json' }
