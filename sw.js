@@ -1,21 +1,20 @@
-const CACHE_NAME = 'attendance-v2';
+const CACHE_NAME = 'attendance-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
-  './app.js',
+  './app-part1.js',
+  './app-part2.js',
   './manifest.webmanifest',
   './icon-192.svg',
   './icon-512.svg',
   './apple-touch-icon.svg'
 ];
-
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
-
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -23,17 +22,14 @@ self.addEventListener('activate', (event) => {
     ).then(() => self.clients.claim())
   );
 });
-
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
-
   if (url.includes('tapi.bale.ai') || url.includes('corsproxy.io')) {
     event.respondWith(fetch(event.request).catch(() => new Response('{"ok":false}', {
       headers: { 'Content-Type': 'application/json' }
     })));
     return;
   }
-
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const network = fetch(event.request).then((res) => {

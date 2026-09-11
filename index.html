@@ -8,8 +8,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ورود و خروج">
-    <meta name="application-name" content="ورود و خروج">
-    <meta name="description" content="سیستم ثبت ورود و خروج و محاسبه اضافه کار">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="apple-touch-icon.svg">
     <link rel="icon" type="image/svg+xml" href="icon-192.svg">
@@ -17,84 +15,66 @@
     <title>سیستم ثبت ورود و خروج</title>
 </head>
 <body>
-
     <div class="container">
         <div class="header">
             <h1>📱 سیستم ثبت ورود و خروج</h1>
             <p>محاسبه اضافه کار هوشمند</p>
         </div>
-
         <div id="statusMessage"></div>
-
-        <!-- صفحه ثبت‌نام -->
         <div id="registerScreen" class="screen active">
             <div class="employee-section">
                 <label for="firstName">نام:</label>
                 <input type="text" id="firstName" placeholder="نام خود را وارد کنید">
-                
                 <label for="lastName">نام خانوادگی:</label>
                 <input type="text" id="lastName" placeholder="نام خانوادگی خود را وارد کنید">
-                
                 <label for="registerPersonnelId">شماره پرسنلی:</label>
                 <input type="tel" id="registerPersonnelId" placeholder="شماره پرسنلی را وارد کنید" inputmode="numeric" pattern="[0-9]*" maxlength="10">
             </div>
-
             <div class="button-group">
                 <button class="btn-success" id="registerBtn">✓ ثبت نام</button>
             </div>
         </div>
-
-        <!-- صفحه اصلی -->
         <div id="mainScreen" class="screen">
             <div class="tabs">
                 <button class="tab-btn active" data-tab="checkin">ثبت ورود/خروج</button>
                 <button class="tab-btn" data-tab="records">سوابق</button>
                 <button class="tab-btn" data-tab="overtime">اضافه کار</button>
             </div>
-
-            <!-- TAB 1: Check-in -->
             <div id="checkin" class="tab-content active">
                 <div class="info-section" id="userInfoBox">
-                    <p style="font-weight: 600; color: #333; font-size: 16px;" id="userFullName">—</p>
-                    <p style="font-size: 13px; color: #666;" id="userPersonnelId">شماره پرسنلی: —</p>
+                    <p style="font-weight:600;color:#333;font-size:16px" id="userFullName">—</p>
+                    <p style="font-size:13px;color:#666" id="userPersonnelId">شماره پرسنلی: —</p>
                 </div>
-
                 <div class="info-section">
                     <p class="time-display" id="currentTime"></p>
                     <p id="dateDisplay"></p>
                 </div>
-
                 <div class="button-group">
                     <button class="btn-success" id="checkInBtn">✓ ورود</button>
                     <button class="btn-danger" id="checkOutBtn">✕ خروج</button>
                 </div>
             </div>
-
-            <!-- TAB 2: Records -->
             <div id="records" class="tab-content">
                 <div class="records-section">
                     <h3>📋 سوابق ورود و خروج</h3>
-                    <div class="button-group" style="margin-bottom: 15px;">
+                    <div class="button-group" style="margin-bottom:15px">
                         <button class="btn-danger" id="clearRecords">🗑️ پاک کردن همه</button>
                     </div>
                     <div id="recordsList"></div>
                 </div>
             </div>
-
-            <!-- TAB 3: Overtime -->
             <div id="overtime" class="tab-content">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button class="btn-info" id="calculateBtn" style="flex: 1;">🧮 محاسبه اضافه کار</button>
+                <div style="display:flex;gap:10px;margin-bottom:20px">
+                    <button class="btn-info" id="calculateBtn" style="flex:1">🧮 محاسبه اضافه کار</button>
                 </div>
-                <div id="overtimeList" class="overtime-section" style="display: none;">
-                    <h3 style="color: #c53030; margin-bottom: 15px;">⏱️ اضافه کار کارکنان</h3>
+                <div id="overtimeList" class="overtime-section" style="display:none">
+                    <h3 style="color:#c53030;margin-bottom:15px">⏱️ اضافه کار کارکنان</h3>
                     <div id="overtimeContent"></div>
                 </div>
             </div>
         </div>
     </div>
-
-    
-    <script src="app.js"></script>
+    <script src="app-part1.js"></script>
+    <script src="app-part2.js"></script>
 </body>
 </html>
