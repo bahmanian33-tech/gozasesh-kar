@@ -117,5 +117,22 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=e=>{
   if(e.target.getAttribute('data-tab')==='records')displayRecords();
 });
 document.getElementById('clearRecords').onclick=()=>{if(confirm('مطمئن هستید؟')){localStorage.removeItem('attendanceRecords');displayRecords();showStatus('سوابق حذف شد','success');}};
+
+// یادآوری ثبت ساعت
+let audioCtx=null;
+function ensureAudio(){if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
+function playAlarmBeep(){const ctx=ensureAudio();if(!ctx)return;const now=ctx.currentTime;[0,0.35,0.7].forEach(delay=>{const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='square';osc.frequency.value=880;gain.gain.setValueAtTime(0.0001,now+delay);gain.gain.exponentialRampToValueAtTime(0.25,now+delay+0.02);gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.25);osc.connect(gain);gain.connect(ctx.destination);osc.start(now+delay);osc.stop(now+delay+0.3);});}
+function notifyReminder(title,body){playAlarmBeep();showStatus(body,'info');if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:body,tag:'attendance-reminder',renotify:true});}catch(e){}}}
+function pad2(n){return(n<10?'0':'')+n;}
+function reminderKey(y,m,d,h,min){return'rem_'+y+'-'+pad2(m)+'-'+pad2(d)+'_'+pad2(h)+':'+pad2(min);}
+function checkReminders(){const now=new Date();const y=now.getFullYear(),m=now.getMonth()+1,d=now.getDate();const h=now.getHours(),min=now.getMinutes();
+if(h===6&&min===58){const key=reminderKey(y,m,d,6,58);if(!localStorage.getItem(key)){localStorage.setItem(key,'1');notifyReminder('یادآوری ورود','ساعت ۶:۵۸ — لطفاً ورود خود را ثبت کنید');}}
+if(h>16||(h===16&&min>=30)){if(min===0||min===30){const key=reminderKey(y,m,d,h,min);if(!localStorage.getItem(key)){localStorage.setItem(key,'1');notifyReminder('یادآوری خروج','ساعت '+pad2(h)+':'+pad2(min)+' — لطفاً خروج خود را ثبت کنید');}}}}
+function startReminderLoop(){if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().catch(()=>{});}
+const unlock=()=>{ensureAudio();document.removeEventListener('click',unlock);document.removeEventListener('touchstart',unlock);};
+document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
+checkReminders();setInterval(checkReminders,15000);}
+startReminderLoop();
+
 loadMainScreen();
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
