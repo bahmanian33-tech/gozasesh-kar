@@ -43,6 +43,7 @@
         min-width: 200px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.2);
       }
+      #installOverlay .install-btn:disabled { opacity: 0.6; }
       #installOverlay .hint {
         margin-top: 18px;
         font-size: 13px;
@@ -54,9 +55,9 @@
 <body>
     <div id="installOverlay">
         <h2>📱 نصب برنامه</h2>
-        <p>برای استفاده، برنامه را مثل اپ اندروید روی گوشی نصب کنید. بعد از نصب فقط از آیکون صفحه اصلی باز کنید.</p>
+        <p>برای استفاده، برنامه را مثل اپ اندروید روی گوشی نصب کنید. بعد از نصب، فقط از آیکون برنامه روی صفحه اصلی استفاده کنید.</p>
         <button type="button" class="install-btn" id="installAppBtn">نصب برنامه</button>
-        <p class="hint" id="installHint">اگر دکمه کار نکرد: منوی کروم ⋮ ← Install app یا «نصب برنامه»</p>
+        <p class="hint" id="installHint">اگر دکمه کار نکرد: منوی کروم ⋮ را بزنید و گزینه «Install app» یا «نصب برنامه» را انتخاب کنید.</p>
     </div>
 
     <div class="container" id="appRoot">
