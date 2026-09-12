@@ -2,6 +2,7 @@ const BALE_TOKEN='666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
 const BALE_CHAT_ID='1163569220';
 const BALE_API='https://tapi.bale.ai/bot'+BALE_TOKEN;
 let currentEmployee=JSON.parse(localStorage.getItem('currentEmployee')||'null');
+let pendingAttendanceType=null;
 
 async function sendToBale(text){
   const u=BALE_API+'/sendMessage?'+new URLSearchParams({chat_id:BALE_CHAT_ID,text});
@@ -33,18 +34,101 @@ function updateTime(){const n=new Date(),c=document.getElementById('currentTime'
 setInterval(updateTime,1000);updateTime();
 
 function isDup(id,type){const r=JSON.parse(localStorage.getItem('attendanceRecords')||'[]'),t=new Date().toLocaleDateString('fa-IR');return!!r.find(x=>x.employeeId===id&&x.date===t&&x.type===type);}
+function pad2(n){return (n<10?'0':'')+n;}
 
-async function recordAttendance(type){
+function buildWheel(el, count, selected){
+  el.innerHTML='';
+  for(let i=0;i<2;i++){const s=document.createElement('div');s.className='tp-item';s.textContent='';el.appendChild(s);}
+  for(let i=0;i<count;i++){
+    const d=document.createElement('div');
+    d.className='tp-item'; d.dataset.val=String(i); d.textContent=pad2(i);
+    el.appendChild(d);
+  }
+  for(let i=0;i<2;i++){const s=document.createElement('div');s.className='tp-item';s.textContent='';el.appendChild(s);}
+  requestAnimationFrame(()=>{ el.scrollTop = selected * 40; });
+}
+function readWheel(el){
+  const idx = Math.round(el.scrollTop / 40);
+  const items = el.querySelectorAll('.tp-item[data-val]');
+  if(idx<0) return 0;
+  if(idx>=items.length) return items.length-1;
+  return parseInt(items[idx].dataset.val,10);
+}
+function snapWheel(el){
+  const idx = Math.round(el.scrollTop / 40);
+  el.scrollTo({ top: idx * 40, behavior: 'smooth' });
+}
+let wheelTimers={};
+function bindWheel(el){
+  el.addEventListener('scroll', ()=>{
+    clearTimeout(wheelTimers[el.id]);
+    wheelTimers[el.id]=setTimeout(()=>snapWheel(el),80);
+  },{passive:true});
+}
+function openTimePicker(type){
+  pendingAttendanceType=type;
+  const modal=document.getElementById('timePickerModal');
+  const title=document.getElementById('tpTitle');
+  const dateLabel=document.getElementById('tpDateLabel');
+  const hourEl=document.getElementById('tpHour');
+  const minEl=document.getElementById('tpMinute');
+  title.textContent = type==='checkin' ? 'ساعت ورود' : 'ساعت خروج';
+  const now=new Date();
+  dateLabel.textContent = 'تاریخ امروز: ' + now.toLocaleDateString('fa-IR',{weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  buildWheel(hourEl, 24, now.getHours());
+  buildWheel(minEl, 60, now.getMinutes());
+  bindWheel(hourEl); bindWheel(minEl);
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+function closeTimePicker(){
+  const modal=document.getElementById('timePickerModal');
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  pendingAttendanceType=null;
+}
+document.getElementById('tpCancel').onclick=()=>closeTimePicker();
+document.getElementById('tpConfirm').onclick=async()=>{
+  const h=readWheel(document.getElementById('tpHour'));
+  const m=readWheel(document.getElementById('tpMinute'));
+  const type=pendingAttendanceType;
+  closeTimePicker();
+  if(!type) return;
+  await recordAttendance(type, h, m);
+};
+document.getElementById('timePickerModal').addEventListener('click', (e)=>{
+  if(e.target.id==='timePickerModal') closeTimePicker();
+});
+
+async function recordAttendance(type, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
   if(isDup(currentEmployee.id,type)){showStatus('⚠️ امروز قبلاً ثبت شده','error');return;}
-  const rec={id:Date.now(),employeeId:currentEmployee.id,name:currentEmployee.fullName,personnelId:currentEmployee.personnelId,type,time:new Date().toLocaleTimeString('fa-IR'),timestamp:new Date().toISOString(),date:new Date().toLocaleDateString('fa-IR')};
-  const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');all.push(rec);localStorage.setItem('attendanceRecords',JSON.stringify(all));
-  const tt=type==='checkin'?'ورود':'خروج',em=type==='checkin'?'🟢':'🔴';
-  showStatus('✓ '+tt+' ثبت شد - '+rec.time,'success');displayRecords();
-  await sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+rec.time+'\n📅 '+rec.date);
+  const now=new Date();
+  const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+  const timeFa = selected.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+  const rec={
+    id:Date.now(), employeeId:currentEmployee.id, name:currentEmployee.fullName,
+    personnelId:currentEmployee.personnelId, type:type, time:timeFa,
+    timestamp:selected.toISOString(), date:now.toLocaleDateString('fa-IR')
+  };
+  const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
+  all.push(rec); localStorage.setItem('attendanceRecords',JSON.stringify(all));
+  const tt=type==='checkin'?'ورود':'خروج', em=type==='checkin'?'🟢':'🔴';
+  showStatus('✓ '+tt+' ثبت شد - '+timeFa,'success');
+  displayRecords();
+  await sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date);
 }
-document.getElementById('checkInBtn').onclick=()=>recordAttendance('checkin');
-document.getElementById('checkOutBtn').onclick=()=>recordAttendance('checkout');
+
+document.getElementById('checkInBtn').onclick=()=>{
+  if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
+  if(isDup(currentEmployee.id,'checkin')){showStatus('⚠️ امروز قبلاً ورود ثبت شده','error');return;}
+  openTimePicker('checkin');
+};
+document.getElementById('checkOutBtn').onclick=()=>{
+  if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
+  if(isDup(currentEmployee.id,'checkout')){showStatus('⚠️ امروز قبلاً خروج ثبت شده','error');return;}
+  openTimePicker('checkout');
+};
 
 function displayRecords(){
   const records=JSON.parse(localStorage.getItem('attendanceRecords')||'[]'),list=document.getElementById('recordsList');
@@ -69,7 +153,6 @@ function periodStart21(){
   }
   const f=new Date(now.getTime()-21*86400000);f.setHours(0,0,0,0);return f;
 }
-
 function dayOT(cin,cout,dow){
   if(!cin||!cout)return 0;
   let h=0;
@@ -119,98 +202,13 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=e=>{
 document.getElementById('clearRecords').onclick=()=>{if(confirm('مطمئن هستید؟')){localStorage.removeItem('attendanceRecords');displayRecords();showStatus('سوابق حذف شد','success');}};
 
 let audioCtx=null;
-function ensureAudio(){
-  try{
-    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended') audioCtx.resume();
-  }catch(e){}
-  return audioCtx;
-}
-function playAlarmBeep(){
-  const ctx=ensureAudio();
-  if(!ctx){showStatus('صدا فعال نشد — یک‌بار روی صفحه بزنید','error');return;}
-  const t0=ctx.currentTime;
-  [0,0.4,0.8].forEach(function(delay){
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type='square'; o.frequency.value=980;
-    g.gain.setValueAtTime(0.001, t0+delay);
-    g.gain.exponentialRampToValueAtTime(0.3, t0+delay+0.03);
-    g.gain.exponentialRampToValueAtTime(0.001, t0+delay+0.28);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(t0+delay); o.stop(t0+delay+0.32);
-  });
-}
-function notifyReminder(title, body){
-  playAlarmBeep();
-  showStatus('🔔 '+body, 'info');
-  if('Notification' in window && Notification.permission==='granted'){
-    try{ new Notification(title,{body:body, tag:'att-rem', renotify:true}); }catch(e){}
-  }
-}
-function dayKey(){
-  const n=new Date();
-  return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
-}
-function checkReminders(){
-  const now=new Date();
-  const h=now.getHours(), m=now.getMinutes();
-  const dk=dayKey();
-  if((h===6 && m>=58) || (h===7 && m<=2)){
-    const key='morning_'+dk;
-    if(!localStorage.getItem(key)){
-      localStorage.setItem(key,'1');
-      notifyReminder('یادآوری ورود','ساعت ۶:۵۸ — لطفاً ورود را ثبت کنید');
-    }
-  }
-  if(h>16 || (h===16 && m>=30)){
-    if(m<=1 || (m>=30 && m<=31)){
-      const slotMin = (m<15) ? 0 : 30;
-      const key='eve_'+dk+'_'+h+'_'+slotMin;
-      if(!localStorage.getItem(key)){
-        localStorage.setItem(key,'1');
-        const mm = slotMin===0 ? '00' : '30';
-        const hh = (h<10?'0':'')+h;
-        notifyReminder('یادآوری خروج','ساعت '+hh+':'+mm+' — لطفاً خروج را ثبت کنید');
-      }
-    }
-  }
-}
-function setupTestAlarmBtn(){
-  const checkin=document.getElementById('checkin');
-  if(!checkin || document.getElementById('testAlarmBtn')) return;
-  const wrap=document.createElement('div');
-  wrap.style.cssText='margin-top:16px;text-align:center';
-  const btn=document.createElement('button');
-  btn.id='testAlarmBtn';
-  btn.className='btn-info';
-  btn.textContent='🔔 تست صدای هشدار';
-  btn.type='button';
-  btn.onclick=function(){
-    ensureAudio();
-    playAlarmBeep();
-    showStatus('اگر صدا شنیدید، هشدار فعال است', 'success');
-    if('Notification' in window && Notification.permission==='default'){
-      Notification.requestPermission();
-    }
-  };
-  wrap.appendChild(btn);
-  checkin.appendChild(wrap);
-}
-function startReminderLoop(){
-  if('Notification' in window && Notification.permission==='default'){
-    Notification.requestPermission().catch(function(){});
-  }
-  function unlock(){ ensureAudio(); document.removeEventListener('click',unlock); document.removeEventListener('touchstart',unlock); }
-  document.addEventListener('click', unlock);
-  document.addEventListener('touchstart', unlock);
-  setupTestAlarmBtn();
-  checkReminders();
-  setInterval(checkReminders, 10000);
-}
+function ensureAudio(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){}return audioCtx;}
+function playAlarmBeep(){const ctx=ensureAudio();if(!ctx){showStatus('صدا فعال نشد — یک‌بار روی صفحه بزنید','error');return;}const t0=ctx.currentTime;[0,0.4,0.8].forEach(function(delay){const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=980;g.gain.setValueAtTime(0.001,t0+delay);g.gain.exponentialRampToValueAtTime(0.3,t0+delay+0.03);g.gain.exponentialRampToValueAtTime(0.001,t0+delay+0.28);o.connect(g);g.connect(ctx.destination);o.start(t0+delay);o.stop(t0+delay+0.32);});}
+function notifyReminder(title,body){playAlarmBeep();showStatus('🔔 '+body,'info');if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:body,tag:'att-rem',renotify:true});}catch(e){}}}
+function dayKey(){const n=new Date();return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();}
+function checkReminders(){const now=new Date();const h=now.getHours(),m=now.getMinutes();const dk=dayKey();if((h===6&&m>=58)||(h===7&&m<=2)){const key='morning_'+dk;if(!localStorage.getItem(key)){localStorage.setItem(key,'1');notifyReminder('یادآوری ورود','ساعت ۶:۵۸ — لطفاً ورود را ثبت کنید');}}if(h>16||(h===16&&m>=30)){if(m<=1||(m>=30&&m<=31)){const slotMin=(m<15)?0:30;const key='eve_'+dk+'_'+h+'_'+slotMin;if(!localStorage.getItem(key)){localStorage.setItem(key,'1');const mm=slotMin===0?'00':'30';const hh=(h<10?'0':'')+h;notifyReminder('یادآوری خروج','ساعت '+hh+':'+mm+' — لطفاً خروج را ثبت کنید');}}}}
+function setupTestAlarmBtn(){const checkin=document.getElementById('checkin');if(!checkin||document.getElementById('testAlarmBtn'))return;const wrap=document.createElement('div');wrap.style.cssText='margin-top:16px;text-align:center';const btn=document.createElement('button');btn.id='testAlarmBtn';btn.className='btn-info';btn.textContent='🔔 تست صدای هشدار';btn.type='button';btn.onclick=function(){ensureAudio();playAlarmBeep();showStatus('اگر صدا شنیدید، هشدار فعال است','success');if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();};wrap.appendChild(btn);checkin.appendChild(wrap);}
+function startReminderLoop(){if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().catch(function(){});}function unlock(){ensureAudio();document.removeEventListener('click',unlock);document.removeEventListener('touchstart',unlock);}document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);setupTestAlarmBtn();checkReminders();setInterval(checkReminders,10000);}
 startReminderLoop();
 loadMainScreen();
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js').then(function(reg){ reg.update(); }).catch(function(){});
-  });
-}
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').then(function(reg){reg.update();}).catch(function(){});});}
