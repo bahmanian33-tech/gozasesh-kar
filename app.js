@@ -247,10 +247,33 @@ function aiAppend(role, text) {
   return el;
 }
 
+function getXaiKey() {
+  return (localStorage.getItem('xaiApiKey') || '').trim();
+}
+
+function updateKeyStatus() {
+  const el = document.getElementById('aiKeyStatus');
+  const input = document.getElementById('xaiApiKeyInput');
+  const key = getXaiKey();
+  if (!el) return;
+  if (key) {
+    el.textContent = '✓ کلید API ذخیره شد — اتصال مستقیم به Grok';
+    el.className = 'ai-key-status ok';
+    if (input && !input.value) input.placeholder = '••••••••' + key.slice(-4);
+  } else {
+    el.textContent = 'کلید API تنظیم نشده — از Puter استفاده می‌شود';
+    el.className = 'ai-key-status';
+  }
+}
+
 function extractAIText(res) {
   if (res == null) return '';
   if (typeof res === 'string') return res;
   if (typeof res === 'object') {
+    if (res.choices && res.choices[0] && res.choices[0].message) {
+      const c = res.choices[0].message.content;
+      if (typeof c === 'string') return c;
+    }
     if (typeof res.message === 'string') return res.message;
     if (res.message && typeof res.message.content === 'string') return res.message.content;
     if (res.message && Array.isArray(res.message.content)) {
@@ -261,12 +284,52 @@ function extractAIText(res) {
     }
     if (typeof res.content === 'string') return res.content;
     if (typeof res.text === 'string') return res.text;
-    try { return JSON.stringify(res); } catch (e) { return String(res); }
   }
   return String(res);
 }
 
-async function askAI(question) {
+async function askGrokDirect(question, apiKey) {
+  const system = 'تو Grok هستی، دستیار هوشمند ساخته‌شده توسط xAI. به فارسی واضح، دقیق و مفید جواب بده. پاسخ را مختصر نگه دار مگر کاربر جزئیات بیشتر بخواهد.';
+  const models = ['grok-4-1-fast-non-reasoning', 'grok-3', 'grok-2-latest', 'grok-2'];
+  let lastErr = null;
+  for (let i = 0; i < models.length; i++) {
+    try {
+      const res = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model: models[i],
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: question }
+          ],
+          temperature: 0.7,
+          stream: false
+        })
+      });
+      if (res.status === 401 || res.status === 403) {
+        throw new Error('کلید API نامعتبر است. از console.x.ai یک کلید جدید بگیرید.');
+      }
+      if (!res.ok) {
+        const t = await res.text().catch(function(){return '';});
+        lastErr = new Error('HTTP ' + res.status + ' ' + t.slice(0, 120));
+        continue;
+      }
+      const data = await res.json();
+      const text = extractAIText(data).trim();
+      if (text) return text;
+    } catch (e) {
+      lastErr = e;
+      if (e && e.message && e.message.indexOf('نامعتبر') !== -1) throw e;
+    }
+  }
+  throw lastErr || new Error('پاسخ از API دریافت نشد');
+}
+
+async function askGrokPuter(question) {
   if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat) {
     throw new Error('puter_missing');
   }
@@ -300,9 +363,48 @@ async function askAI(question) {
   throw lastErr || new Error('ai_failed');
 }
 
+async function askAI(question) {
+  const key = getXaiKey();
+  if (key) {
+    try {
+      return await askGrokDirect(question, key);
+    } catch (e) {
+      const msg = (e && e.message) ? String(e.message) : '';
+      if (msg.indexOf('نامعتبر') !== -1) throw e;
+      try {
+        return await askGrokPuter(question);
+      } catch (e2) {
+        throw e;
+      }
+    }
+  }
+  return await askGrokPuter(question);
+}
+
 function setupAIChat() {
   const input = document.getElementById('aiInput');
   const btn = document.getElementById('aiSendBtn');
+  const keyInput = document.getElementById('xaiApiKeyInput');
+  const keyBtn = document.getElementById('xaiKeySaveBtn');
+  updateKeyStatus();
+
+  if (keyBtn && keyInput) {
+    keyBtn.onclick = function () {
+      const v = keyInput.value.trim();
+      if (!v) {
+        localStorage.removeItem('xaiApiKey');
+        keyInput.value = '';
+        updateKeyStatus();
+        showStatus('کلید API پاک شد', 'info');
+        return;
+      }
+      localStorage.setItem('xaiApiKey', v);
+      keyInput.value = '';
+      updateKeyStatus();
+      showStatus('کلید API ذخیره شد', 'success');
+    };
+  }
+
   if (!input || !btn) return;
   let busy = false;
 
@@ -314,7 +416,7 @@ function setupAIChat() {
     input.value = '';
     input.style.height = '40px';
     aiAppend('user', q);
-    const typing = aiAppend('bot typing', 'در حال اتصال به Grok...');
+    const typing = aiAppend('bot typing', getXaiKey() ? 'در حال اتصال مستقیم به Grok...' : 'در حال اتصال به Grok...');
     try {
       const answer = await askAI(q);
       if (typing) typing.remove();
@@ -322,10 +424,12 @@ function setupAIChat() {
     } catch (err) {
       if (typing) typing.remove();
       const msg = (err && err.message) ? String(err.message) : '';
-      if (msg.includes('puter_missing')) {
-        aiAppend('bot', 'کتابخانه هوش مصنوعی هنوز بارگذاری نشده. صفحه را یک‌بار رفرش کنید.');
+      if (msg.indexOf('نامعتبر') !== -1) {
+        aiAppend('bot', msg);
+      } else if (msg.includes('puter_missing') && !getXaiKey()) {
+        aiAppend('bot', 'برای Grok یا کلید API از console.x.ai وارد کنید، یا صفحه را رفرش کنید.');
       } else {
-        aiAppend('bot', 'اتصال به Grok برقرار نشد. اینترنت را چک کنید. اگر پنجره ورود Puter باز شد، وارد شوید (رایگان) تا Grok فعال شود.');
+        aiAppend('bot', 'اتصال برقرار نشد. کلید API را در console.x.ai بسازید و اینجا ذخیره کنید، یا اینترنت را چک کنید. ' + (msg ? '(' + msg.slice(0, 80) + ')' : ''));
       }
     }
     busy = false;
