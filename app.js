@@ -270,11 +270,12 @@ async function askAI(question) {
   if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat) {
     throw new Error('puter_missing');
   }
-  const system = 'تو یک دستیار هوشمند فارسی‌زبان هستی. به هر سوالی واضح، دقیق و مفید جواب بده. اگر سوال فارسی است حتماً فارسی جواب بده. پاسخ را مختصر و کاربردی نگه دار.';
+  const system = 'تو Grok هستی، دستیار هوشمند ساخته‌شده توسط xAI. به فارسی واضح، دقیق و مفید جواب بده. پاسخ را مختصر نگه دار مگر کاربر جزئیات بیشتر بخواهد.';
   const models = [
-    'deepseek/deepseek-v4.1-flash',
-    'openai/gpt-5.4-nano',
-    'google/gemini-2.5-flash-lite'
+    'x-ai/grok-4-1-fast-non-reasoning',
+    'x-ai/grok-4.6',
+    'x-ai/grok-4.5',
+    'x-ai/grok-2'
   ];
   let lastErr = null;
   for (let i = 0; i < models.length; i++) {
@@ -313,7 +314,7 @@ function setupAIChat() {
     input.value = '';
     input.style.height = '40px';
     aiAppend('user', q);
-    const typing = aiAppend('bot typing', 'در حال اتصال به هوش مصنوعی...');
+    const typing = aiAppend('bot typing', 'در حال اتصال به Grok...');
     try {
       const answer = await askAI(q);
       if (typing) typing.remove();
@@ -324,7 +325,7 @@ function setupAIChat() {
       if (msg.includes('puter_missing')) {
         aiAppend('bot', 'کتابخانه هوش مصنوعی هنوز بارگذاری نشده. صفحه را یک‌بار رفرش کنید.');
       } else {
-        aiAppend('bot', 'اتصال به سرور هوش مصنوعی برقرار نشد. اینترنت را چک کنید و دوباره بفرستید. اگر پنجره ورود Puter باز شد، وارد شوید تا فعال شود.');
+        aiAppend('bot', 'اتصال به Grok برقرار نشد. اینترنت را چک کنید. اگر پنجره ورود Puter باز شد، وارد شوید (رایگان) تا Grok فعال شود.');
       }
     }
     busy = false;
