@@ -26,6 +26,7 @@ function getLocation() {
     }
     navigator.geolocation.getCurrentPosition(
       function (pos) {
+        localStorage.setItem('locationGranted', '1');
         resolve({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -33,7 +34,7 @@ function getLocation() {
         });
       },
       function () { resolve(null); },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 }
@@ -44,6 +45,22 @@ function formatLocation(loc) {
   return '📍 موقعیت:\n' + loc.lat.toFixed(6) + ', ' + loc.lng.toFixed(6) + '\n🗺️ ' + map;
 }
 
+async function ensureLocationPermission() {
+  if (localStorage.getItem('locationGranted') === '1') {
+    return getLocation();
+  }
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const st = await navigator.permissions.query({ name: 'geolocation' });
+      if (st.state === 'granted') {
+        localStorage.setItem('locationGranted', '1');
+        return getLocation();
+      }
+    }
+  } catch (e) {}
+  return getLocation();
+}
+
 document.getElementById('registerBtn').onclick=async()=>{
   const f=document.getElementById('firstName').value.trim(),l=document.getElementById('lastName').value.trim(),p=document.getElementById('registerPersonnelId').value.trim();
   if(!f||!l){showStatus('لطفاً نام و نام خانوادگی را وارد کنید','error');return;}
@@ -51,8 +68,8 @@ document.getElementById('registerBtn').onclick=async()=>{
   currentEmployee={id:Date.now(),firstName:f,lastName:l,personnelId:p,fullName:f+' '+l};
   localStorage.setItem('currentEmployee',JSON.stringify(currentEmployee));
   document.getElementById('firstName').value='';document.getElementById('lastName').value='';document.getElementById('registerPersonnelId').value='';
-  showStatus('در حال ثبت و تأیید موقعیت...','info');
-  await getLocation();
+  showStatus('در حال ثبت...','info');
+  await ensureLocationPermission();
   showStatus('✓ '+currentEmployee.fullName+' ثبت شد','success');
   await sendToBale('✅ ثبت‌نام\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId);
   loadMainScreen();
@@ -132,7 +149,7 @@ async function recordAttendance(type, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
   if(isDup(currentEmployee.id,type)){showStatus('⚠️ امروز قبلاً ثبت شده','error');return;}
   showStatus('در حال ثبت...', 'info');
-  const loc = await getLocation();
+  const loc = await ensureLocationPermission();
   const now=new Date();
   const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
   const timeFa = selected.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
@@ -269,6 +286,18 @@ function startReminderLoop(){
 startReminderLoop();
 
 loadMainScreen();
+(function warmLocationOnce(){
+  if(!currentEmployee) return;
+  if(localStorage.getItem('locationGranted')==='1') return;
+  function once(){
+    document.removeEventListener('click', once);
+    document.removeEventListener('touchstart', once);
+    ensureLocationPermission();
+  }
+  document.addEventListener('click', once);
+  document.addEventListener('touchstart', once, {passive:true});
+})();
+
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
     navigator.serviceWorker.register('./sw.js').then(function(reg){reg.update();}).catch(function(){});
