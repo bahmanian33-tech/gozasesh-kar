@@ -88,6 +88,77 @@
         font-variant-numeric: tabular-nums;
       }
       .tp-sep { font-size: 24px; font-weight: 600; padding: 0 6px; color: #a5b4fc; z-index: 3; }
+      .ai-section {
+        margin-top: 18px;
+        background: rgba(30, 41, 59, 0.75);
+        border: 1px solid rgba(129, 140, 248, 0.25);
+        border-radius: 18px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        max-height: 320px;
+      }
+      .ai-header {
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 10px; flex-shrink: 0;
+      }
+      .ai-header .ai-badge {
+        width: 32px; height: 32px; border-radius: 10px;
+        background: linear-gradient(135deg, #6366f1, #0ea5e9);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+      }
+      .ai-header h3 {
+        font-size: 14px; color: #e0e7ff; font-weight: 700; margin: 0;
+      }
+      .ai-header span { font-size: 11px; color: #94a3b8; display: block; }
+      .ai-messages {
+        flex: 1; overflow-y: auto; min-height: 80px; max-height: 160px;
+        padding: 6px 2px; margin-bottom: 10px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .ai-msg {
+        margin-bottom: 8px; padding: 8px 12px; border-radius: 14px;
+        font-size: 13px; line-height: 1.65; max-width: 92%;
+        word-wrap: break-word;
+      }
+      .ai-msg.bot {
+        background: rgba(99, 102, 241, 0.18);
+        border: 1px solid rgba(129, 140, 248, 0.25);
+        color: #e0e7ff; border-bottom-right-radius: 4px;
+        margin-left: auto; text-align: right;
+      }
+      .ai-msg.user {
+        background: rgba(14, 165, 233, 0.15);
+        border: 1px solid rgba(14, 165, 233, 0.25);
+        color: #e0f2fe; border-bottom-left-radius: 4px;
+        margin-right: auto; text-align: right;
+      }
+      .ai-msg.typing { opacity: 0.7; font-style: italic; }
+      .ai-input-row {
+        display: flex; gap: 8px; flex-shrink: 0; align-items: flex-end;
+      }
+      .ai-input-row textarea {
+        flex: 1; min-height: 40px; max-height: 80px;
+        resize: none; border-radius: 14px; padding: 10px 12px;
+        border: 1px solid rgba(148,163,184,0.2);
+        background: rgba(15, 23, 42, 0.9); color: #f1f5f9;
+        font-size: 14px; font-family: inherit; line-height: 1.5;
+      }
+      .ai-input-row textarea:focus {
+        outline: none; border-color: #818cf8;
+        box-shadow: 0 0 0 3px rgba(129,140,248,0.2);
+      }
+      .ai-send-btn {
+        min-width: 44px !important; width: 44px; height: 44px;
+        padding: 0 !important; border-radius: 14px !important;
+        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+        color: #fff !important; font-size: 18px !important;
+        box-shadow: 0 4px 12px rgba(99,102,241,0.35) !important;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .ai-send-btn:disabled { opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -153,6 +224,22 @@
                 <div class="button-group">
                     <button class="btn-success" id="checkInBtn">✓ ورود</button>
                     <button class="btn-danger" id="checkOutBtn">✕ خروج</button>
+                </div>
+                <div class="ai-section" id="aiSection">
+                    <div class="ai-header">
+                        <div class="ai-badge">🤖</div>
+                        <div>
+                            <h3>دستیار هوشمند</h3>
+                            <span>سوال خود را بنویسید</span>
+                        </div>
+                    </div>
+                    <div class="ai-messages" id="aiMessages">
+                        <div class="ai-msg bot">سلام! من دستیار هوشمند هستم. درباره ورود و خروج، اضافه کار یا هر موضوع دیگری بپرسید.</div>
+                    </div>
+                    <div class="ai-input-row">
+                        <textarea id="aiInput" rows="1" placeholder="متن سوال خود را بنویسید..."></textarea>
+                        <button type="button" class="ai-send-btn" id="aiSendBtn" title="ارسال">➤</button>
+                    </div>
                 </div>
             </div>
             <div id="records" class="tab-content">
