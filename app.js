@@ -236,88 +236,113 @@ function startReminderLoop(){
 }
 startReminderLoop();
 
-function aiAppend(role,text){
-  const box=document.getElementById('aiMessages');
-  if(!box) return null;
-  const el=document.createElement('div');
-  el.className='ai-msg '+role;
-  el.textContent=text;
+function aiAppend(role, text) {
+  const box = document.getElementById('aiMessages');
+  if (!box) return null;
+  const el = document.createElement('div');
+  el.className = 'ai-msg ' + role;
+  el.textContent = text;
   box.appendChild(el);
-  box.scrollTop=box.scrollHeight;
+  box.scrollTop = box.scrollHeight;
   return el;
 }
-function localAIAnswer(q){
-  const s=(q||'').trim().toLowerCase();
-  const has=(...ws)=>ws.some(w=>s.includes(w));
-  if(has('ورود','خروج','ثبت ساعت','چطور ثبت','نحوه ثبت'))
-    return 'برای ثبت: دکمه «ورود» یا «خروج» را بزنید، ساعت را مثل آیفون انتخاب کنید و تأیید کنید. تاریخ همان روز خودکار است و به بله ارسال می‌شود.';
-  if(has('دوبار','تکرار','قبلا ثبت'))
-    return 'هر روز فقط یک ورود و یک خروج مجاز است. اگر قبلاً ثبت شده باشد پیام «امروز قبلاً ثبت شده» می‌آید.';
-  if(has('اضافه کار','اضافه‌کار','overtime'))
-    return 'اضافه کار از تاریخ ۲۱ ماه شمسی تا امروز حساب می‌شود. در تب «اضافه کار» دکمه محاسبه را بزنید؛ نتیجه در برنامه و بله می‌آید.';
-  if(has('قانون','قوانین','فرمول','چطور حساب'))
-    return 'ورود قبل از ۷ و خروج بعد از ۱۶:۳۰ می‌تواند اضافه کار بسازد؛ چهارشنبه و پنج‌شنبه قوانین خاص دارند و در محاسبه خودکار لحاظ می‌شوند.';
-  if(has('نصب','آیکون','صفحه اصلی','pwa','اپ'))
-    return 'در کروم منوی ⋮ را بزنید و Install app یا Add to Home screen را انتخاب کنید.';
-  if(has('هشدار','آلارم','زنگ','یادآوری','۶:۵۸','6:58'))
-    return 'حدود ۶:۵۸ یک‌بار و از ۱۶:۳۰ هر نیم‌ساعت یادآوری می‌آید. زنگ کوچک گوشه بالا برای تست صداست.';
-  if(has('بله','ربات','ارسال'))
-    return 'ورود، خروج، ثبت‌نام و محاسبه اضافه کار خودکار به ربات بله ارسال می‌شود.';
-  if(has('نام','پرسنلی','مشخصات','ثبت نام'))
-    return 'نام و شماره پرسنلی فقط بار اول گرفته می‌شود و در گوشی می‌ماند.';
-  if(has('سلام','درود','صبح بخیر','hi','hello'))
-    return 'سلام! درباره ورود/خروج، اضافه کار، نصب یا هشدار بپرسید.';
-  if(has('ممنون','مرسی','تشکر'))
-    return 'خواهش می‌کنم.';
-  if(has('ساعت چند','تاریخ امروز','امروز چندمه')){
-    const n=new Date();
-    return 'الان '+n.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})+' — تاریخ: '+n.toLocaleDateString('fa-IR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  }
-  if(has('کمک','راهنما'))
-    return 'مثلاً بپرسید: چطور ورود ثبت کنم؟ اضافه کار چطور حساب می‌شود؟ چطور نصب کنم؟';
-  return null;
-}
-async function askAI(question){
-  const local=localAIAnswer(question);
-  if(local) return local;
-  try{
-    const short='به فارسی خیلی کوتاه جواب بده: '+question.slice(0,120);
-    const url='https://text.pollinations.ai/'+encodeURIComponent(short);
-    const ctrl=new AbortController();
-    const t=setTimeout(()=>ctrl.abort(),10000);
-    const res=await fetch(url,{cache:'no-store',signal:ctrl.signal});
-    clearTimeout(t);
-    if(res.ok){
-      const text=(await res.text()).trim();
-      if(text&&text.length>2&&!/Payment Required|403|error/i.test(text)) return text.slice(0,600);
+
+function extractAIText(res) {
+  if (res == null) return '';
+  if (typeof res === 'string') return res;
+  if (typeof res === 'object') {
+    if (typeof res.message === 'string') return res.message;
+    if (res.message && typeof res.message.content === 'string') return res.message.content;
+    if (res.message && Array.isArray(res.message.content)) {
+      return res.message.content.map(function (b) {
+        if (typeof b === 'string') return b;
+        return (b && (b.text || b.content)) || '';
+      }).join('');
     }
-  }catch(e){}
-  return 'برای این سوال پاسخ آماده ندارم. درباره ورود، خروج، اضافه کار، نصب یا هشدار بپرسید.';
-}
-function setupAIChat(){
-  const input=document.getElementById('aiInput');
-  const btn=document.getElementById('aiSendBtn');
-  if(!input||!btn) return;
-  let busy=false;
-  async function send(){
-    const q=input.value.trim();
-    if(!q||busy) return;
-    busy=true; btn.disabled=true; input.value=''; input.style.height='40px';
-    aiAppend('user',q);
-    const typing=aiAppend('bot typing','در حال پاسخ...');
-    try{
-      const answer=await askAI(q);
-      if(typing) typing.remove();
-      aiAppend('bot',answer);
-    }catch(e){
-      if(typing) typing.remove();
-      aiAppend('bot', localAIAnswer(q)||'پاسخ آماده نشد. سوال را ساده‌تر بپرسید.');
-    }
-    busy=false; btn.disabled=false; input.focus();
+    if (typeof res.content === 'string') return res.content;
+    if (typeof res.text === 'string') return res.text;
+    try { return JSON.stringify(res); } catch (e) { return String(res); }
   }
-  btn.onclick=send;
-  input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
-  input.addEventListener('input',function(){this.style.height='40px';this.style.height=Math.min(80,this.scrollHeight)+'px';});
+  return String(res);
+}
+
+async function askAI(question) {
+  if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat) {
+    throw new Error('puter_missing');
+  }
+  const system = 'تو یک دستیار هوشمند فارسی‌زبان هستی. به هر سوالی واضح، دقیق و مفید جواب بده. اگر سوال فارسی است حتماً فارسی جواب بده. پاسخ را مختصر و کاربردی نگه دار.';
+  const models = [
+    'deepseek/deepseek-v4.1-flash',
+    'openai/gpt-5.4-nano',
+    'google/gemini-2.5-flash-lite'
+  ];
+  let lastErr = null;
+  for (let i = 0; i < models.length; i++) {
+    try {
+      const res = await puter.ai.chat([
+        { role: 'system', content: system },
+        { role: 'user', content: question }
+      ], { model: models[i] });
+      const text = extractAIText(res).trim();
+      if (text) return text;
+    } catch (e) {
+      lastErr = e;
+      try {
+        const res2 = await puter.ai.chat(system + '\n\nسوال: ' + question, { model: models[i] });
+        const text2 = extractAIText(res2).trim();
+        if (text2) return text2;
+      } catch (e2) {
+        lastErr = e2;
+      }
+    }
+  }
+  throw lastErr || new Error('ai_failed');
+}
+
+function setupAIChat() {
+  const input = document.getElementById('aiInput');
+  const btn = document.getElementById('aiSendBtn');
+  if (!input || !btn) return;
+  let busy = false;
+
+  async function send() {
+    const q = input.value.trim();
+    if (!q || busy) return;
+    busy = true;
+    btn.disabled = true;
+    input.value = '';
+    input.style.height = '40px';
+    aiAppend('user', q);
+    const typing = aiAppend('bot typing', 'در حال اتصال به هوش مصنوعی...');
+    try {
+      const answer = await askAI(q);
+      if (typing) typing.remove();
+      aiAppend('bot', answer);
+    } catch (err) {
+      if (typing) typing.remove();
+      const msg = (err && err.message) ? String(err.message) : '';
+      if (msg.includes('puter_missing')) {
+        aiAppend('bot', 'کتابخانه هوش مصنوعی هنوز بارگذاری نشده. صفحه را یک‌بار رفرش کنید.');
+      } else {
+        aiAppend('bot', 'اتصال به سرور هوش مصنوعی برقرار نشد. اینترنت را چک کنید و دوباره بفرستید. اگر پنجره ورود Puter باز شد، وارد شوید تا فعال شود.');
+      }
+    }
+    busy = false;
+    btn.disabled = false;
+    input.focus();
+  }
+
+  btn.onclick = send;
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+  input.addEventListener('input', function () {
+    this.style.height = '40px';
+    this.style.height = Math.min(80, this.scrollHeight) + 'px';
+  });
 }
 setupAIChat();
 
