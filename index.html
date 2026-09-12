@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,74 +16,78 @@
     <style>
       #installOverlay {
         display: none; position: fixed; inset: 0; z-index: 99999;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: #fff; flex-direction: column; align-items: center; justify-content: center;
+        background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0c4a6e 100%);
+        color: #f1f5f9; flex-direction: column; align-items: center; justify-content: center;
         padding: 28px 20px; text-align: center; font-family: Tahoma, sans-serif;
       }
       #installOverlay.show { display: flex; }
-      #installOverlay h2 { font-size: 22px; margin-bottom: 12px; }
-      #installOverlay p { font-size: 15px; line-height: 1.8; opacity: 0.95; max-width: 340px; margin-bottom: 16px; }
+      #installOverlay h2 { font-size: 22px; margin-bottom: 12px; color: #e0e7ff; }
+      #installOverlay p { font-size: 15px; line-height: 1.8; opacity: 0.9; max-width: 340px; margin-bottom: 16px; color: #cbd5e1; }
       #installOverlay .install-btn {
-        background: #fff; color: #667eea; border: none; border-radius: 12px;
+        background: linear-gradient(135deg, #818cf8, #6366f1); color: #fff; border: none; border-radius: 16px;
         padding: 14px 28px; font-size: 16px; font-weight: 700; cursor: pointer; min-width: 200px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin: 6px;
+        box-shadow: 0 8px 24px rgba(99,102,241,0.4); margin: 6px;
       }
       #installOverlay .skip-btn {
-        background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5);
-        border-radius: 12px; padding: 12px 24px; font-size: 14px; cursor: pointer; min-width: 200px; margin: 6px;
+        background: transparent; color: #94a3b8; border: 1px solid rgba(148,163,184,0.35);
+        border-radius: 16px; padding: 12px 24px; font-size: 14px; cursor: pointer; min-width: 200px; margin: 6px;
       }
-      #installOverlay .hint { margin-top: 14px; font-size: 13px; opacity: 0.9; max-width: 320px; line-height: 1.7; }
+      #installOverlay .hint { margin-top: 14px; font-size: 13px; opacity: 0.85; max-width: 320px; line-height: 1.7; color: #94a3b8; }
       #timePickerModal {
         display: none; position: fixed; inset: 0; z-index: 100000;
-        background: rgba(0,0,0,0.45); align-items: flex-end; justify-content: center;
+        background: rgba(0,0,0,0.65); align-items: flex-end; justify-content: center;
       }
       #timePickerModal.show { display: flex; }
       .tp-sheet {
-        width: 100%; max-width: 420px; background: #f2f2f7;
-        border-radius: 16px 16px 0 0; padding: 0 0 20px;
-        box-shadow: 0 -8px 32px rgba(0,0,0,0.2);
+        width: 100%; max-width: 420px;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 24px 24px 0 0; padding: 0 0 28px;
+        box-shadow: 0 -12px 40px rgba(0,0,0,0.5);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+        border-top: 1px solid rgba(148,163,184,0.15);
       }
       .tp-header {
         display: flex; justify-content: space-between; align-items: center;
-        padding: 12px 16px; border-bottom: 1px solid #e5e5ea;
+        padding: 14px 18px; border-bottom: 1px solid rgba(148,163,184,0.12);
       }
       .tp-header button {
-        background: none; border: none; color: #007aff; font-size: 17px;
+        background: none; border: none; color: #818cf8; font-size: 17px;
         font-weight: 600; cursor: pointer; min-width: auto; padding: 8px 4px;
+        box-shadow: none; border-radius: 10px;
       }
-      .tp-header .tp-title { font-size: 15px; font-weight: 600; color: #1c1c1e; }
-      .tp-date { text-align: center; padding: 10px; font-size: 14px; color: #8e8e93; }
+      .tp-header button:active { opacity: 0.7; transform: none; }
+      .tp-header .tp-title { font-size: 15px; font-weight: 600; color: #e2e8f0; }
+      .tp-date { text-align: center; padding: 10px; font-size: 13px; color: #94a3b8; }
       .tp-wheels {
         display: flex; justify-content: center; align-items: center;
-        height: 220px; position: relative; direction: ltr;
+        height: 200px; position: relative; direction: ltr;
         margin: 0 24px; overflow: hidden;
       }
       .tp-wheels::before, .tp-wheels::after {
-        content: ''; position: absolute; left: 0; right: 0; height: 80px; z-index: 2; pointer-events: none;
+        content: ''; position: absolute; left: 0; right: 0; height: 70px; z-index: 2; pointer-events: none;
       }
       .tp-wheels::before {
-        top: 0; background: linear-gradient(to bottom, rgba(242,242,247,0.95), rgba(242,242,247,0));
+        top: 0; background: linear-gradient(to bottom, rgba(15,23,42,0.95), rgba(15,23,42,0));
       }
       .tp-wheels::after {
-        bottom: 0; background: linear-gradient(to top, rgba(242,242,247,0.95), rgba(242,242,247,0));
+        bottom: 0; background: linear-gradient(to top, rgba(15,23,42,0.95), rgba(15,23,42,0));
       }
       .tp-highlight {
         position: absolute; left: 8px; right: 8px; top: 50%; transform: translateY(-50%);
-        height: 40px; border-top: 1px solid #c7c7cc; border-bottom: 1px solid #c7c7cc;
-        border-radius: 8px; background: rgba(0,0,0,0.04); z-index: 1; pointer-events: none;
+        height: 40px; border-top: 1px solid rgba(129,140,248,0.35); border-bottom: 1px solid rgba(129,140,248,0.35);
+        border-radius: 12px; background: rgba(99,102,241,0.12); z-index: 1; pointer-events: none;
       }
       .tp-col {
-        height: 220px; overflow-y: auto; scroll-snap-type: y mandatory;
+        height: 200px; overflow-y: auto; scroll-snap-type: y mandatory;
         -webkit-overflow-scrolling: touch; width: 72px; z-index: 3; scrollbar-width: none;
       }
       .tp-col::-webkit-scrollbar { display: none; }
       .tp-item {
         height: 40px; display: flex; align-items: center; justify-content: center;
-        font-size: 22px; color: #1c1c1e; scroll-snap-align: center;
+        font-size: 22px; color: #e2e8f0; scroll-snap-align: center;
         font-variant-numeric: tabular-nums;
       }
-      .tp-sep { font-size: 24px; font-weight: 600; padding: 0 6px; color: #1c1c1e; z-index: 3; }
+      .tp-sep { font-size: 24px; font-weight: 600; padding: 0 6px; color: #a5b4fc; z-index: 3; }
     </style>
 </head>
 <body>
@@ -139,8 +143,8 @@
             </div>
             <div id="checkin" class="tab-content active">
                 <div class="info-section" id="userInfoBox">
-                    <p style="font-weight:600;color:#333;font-size:16px" id="userFullName">—</p>
-                    <p style="font-size:13px;color:#666" id="userPersonnelId">شماره پرسنلی: —</p>
+                    <p style="font-weight:600;font-size:16px" id="userFullName">—</p>
+                    <p style="font-size:13px" id="userPersonnelId">شماره پرسنلی: —</p>
                 </div>
                 <div class="info-section">
                     <p class="time-display" id="currentTime"></p>
@@ -165,7 +169,7 @@
                     <button class="btn-info" id="calculateBtn" style="flex:1">🧮 محاسبه اضافه کار</button>
                 </div>
                 <div id="overtimeList" class="overtime-section" style="display:none">
-                    <h3 style="color:#c53030;margin-bottom:15px">⏱️ اضافه کار کارکنان</h3>
+                    <h3 style="color:#fca5a5;margin-bottom:15px">⏱️ اضافه کار کارکنان</h3>
                     <div id="overtimeContent"></div>
                 </div>
             </div>
