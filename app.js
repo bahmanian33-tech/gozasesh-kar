@@ -203,13 +203,13 @@ function periodStart21(){
   const f=new Date(now.getTime()-21*86400000);f.setHours(0,0,0,0);return f;
 }
 function dayOT(cin,cout,dow){
+  // اضافه‌کار: از ۱۶:۳۰؛ چهارشنبه از ۱۵:۳۰ — خروجی به دقیقه
   if(!cin||!cout)return 0;
-  let h=0;
-  const ciH=cin.getHours(),ciM=cin.getMinutes(),coH=cout.getHours(),coM=cout.getMinutes();
-  if(ciH<7&&(coH>16||(coH===16&&coM>=30)))h=(cout-cin)/3600000-9;
-  if(dow===3&&(coH>15||(coH===15&&coM>=30)))h+=(coH-15)+(coM/60)-0.5;
-  if(dow===4){const s=Math.max(ciH+ciM/60,7),e=Math.min(coH+coM/60,17);if(s<e)h=e-s;}
-  return h>0?Math.round(h*100)/100:0;
+  const coH=cout.getHours(), coM=cout.getMinutes();
+  const endMin = coH*60 + coM;
+  const startMin = (dow === 3) ? (15*60 + 30) : (16*60 + 30);
+  const ot = endMin - startMin;
+  return ot > 0 ? ot : 0;
 }
 
 document.getElementById('calculateBtn').onclick=async()=>{
@@ -230,14 +230,14 @@ document.getElementById('calculateBtn').onclick=async()=>{
     else{if(!g[k].co||ts>g[k].co)g[k].co=ts;}
   });
   let total=0;Object.values(g).forEach(x=>{total+=dayOT(x.ci,x.co,x.dow);});
-  total=Math.round(total*100)/100;
+  total=Math.round(total);
   let monthName='';
   try{monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{month:'long'}).format(start);}catch(e){monthName='';}
-  const msg='اضافه کار «'+currentEmployee.fullName+'» از تاریخ ۲۱ '+monthName+' تا کنون به ساعت برابر با '+total.toFixed(2)+' است';
+  const msg='اضافه کار «'+currentEmployee.fullName+'» از تاریخ ۲۱ '+monthName+' تا کنون برابر با '+total+' دقیقه است';
   const box=document.getElementById('overtimeList'),content=document.getElementById('overtimeContent');
-  content.innerHTML='<div class="overtime-item"><span class="overtime-name">'+currentEmployee.fullName+'</span><span class="overtime-hours">'+total.toFixed(2)+' ساعت</span></div><p style="margin-top:12px;font-size:13px;color:#fecaca;line-height:1.7">'+msg+'</p>';
+  content.innerHTML='<div class="overtime-item"><span class="overtime-name">'+currentEmployee.fullName+'</span><span class="overtime-hours">'+total+' دقیقه</span></div><p style="margin-top:12px;font-size:13px;color:#fecaca;line-height:1.7">'+msg+'</p>';
   box.style.display='block';
-  showStatus('اضافه کار: '+total.toFixed(2)+' ساعت','success');
+  showStatus('اضافه کار: '+total+' دقیقه','success');
   sendToBale('⏱️ '+msg);
 };
 
