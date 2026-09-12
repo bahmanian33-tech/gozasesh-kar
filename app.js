@@ -14,7 +14,7 @@ async function sendToBale(text){
   return false;
 }
 
-function showStatus(m,t){const e=document.getElementById('statusMessage');e.innerHTML='<div class="status-message status-'+t+'">'+m+'</div>';setTimeout(()=>e.innerHTML='',5000);}
+function showStatus(m,t){const e=document.getElementById('statusMessage');e.innerHTML='<div class="status-message status-'+t+'">'+m+'</div>';setTimeout(()=>e.innerHTML='',4000);}
 function updateUserInfo(){if(!currentEmployee)return;document.getElementById('userFullName').textContent=currentEmployee.fullName;document.getElementById('userPersonnelId').textContent='شماره پرسنلی: '+currentEmployee.personnelId;}
 function loadMainScreen(){currentEmployee=JSON.parse(localStorage.getItem('currentEmployee')||'null');if(!currentEmployee){document.getElementById('registerScreen').classList.add('active');document.getElementById('mainScreen').classList.remove('active');}else{document.getElementById('registerScreen').classList.remove('active');document.getElementById('mainScreen').classList.add('active');updateUserInfo();}}
 
@@ -56,13 +56,13 @@ function readWheel(el){
 }
 function snapWheel(el){
   const idx = Math.round(el.scrollTop / 40);
-  el.scrollTo({ top: idx * 40, behavior: 'smooth' });
+  el.scrollTo({ top: idx * 40, behavior: 'auto' });
 }
 let wheelTimers={};
 function bindWheel(el){
   el.addEventListener('scroll', ()=>{
     clearTimeout(wheelTimers[el.id]);
-    wheelTimers[el.id]=setTimeout(()=>snapWheel(el),80);
+    wheelTimers[el.id]=setTimeout(()=>snapWheel(el),30);
   },{passive:true});
 }
 function openTimePicker(type){
@@ -116,7 +116,7 @@ async function recordAttendance(type, hour, minute){
   const tt=type==='checkin'?'ورود':'خروج', em=type==='checkin'?'🟢':'🔴';
   showStatus('✓ '+tt+' ثبت شد - '+timeFa,'success');
   displayRecords();
-  await sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date);
+  sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date);
 }
 
 document.getElementById('checkInBtn').onclick=()=>{
@@ -132,7 +132,7 @@ document.getElementById('checkOutBtn').onclick=()=>{
 
 function displayRecords(){
   const records=JSON.parse(localStorage.getItem('attendanceRecords')||'[]'),list=document.getElementById('recordsList');
-  if(!list)return;if(!records.length){list.innerHTML='<p style="text-align:center;color:#999">هنوز سابقه‌ای ثبت نشده</p>';return;}
+  if(!list)return;if(!records.length){list.innerHTML='<p style="text-align:center;color:#64748b">هنوز سابقه‌ای ثبت نشده</p>';return;}
   const g={};records.forEach(r=>{const k=r.employeeId+'_'+r.date;if(!g[k])g[k]={name:r.name,personnelId:r.personnelId,date:r.date,ci:'',co:''};if(r.type==='checkin')g[k].ci=r.time;else g[k].co=r.time;});
   list.innerHTML=Object.entries(g).map(([k,x])=>'<div class="record-day-item"><p class="day-name">'+x.name+'</p><p class="day-id">'+x.personnelId+'</p><p class="day-date">'+x.date+'</p><div class="time-columns"><div class="time-column checkin-column"><div class="column-header">ورود</div><div class="column-time">'+(x.ci||'-')+'</div></div><div class="time-column checkout-column"><div class="column-header">خروج</div><div class="column-time">'+(x.co||'-')+'</div></div></div></div>').join('');
 }
@@ -186,10 +186,10 @@ document.getElementById('calculateBtn').onclick=async()=>{
   try{monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{month:'long'}).format(start);}catch(e){monthName='';}
   const msg='اضافه کار «'+currentEmployee.fullName+'» از تاریخ ۲۱ '+monthName+' تا کنون به ساعت برابر با '+total.toFixed(2)+' است';
   const box=document.getElementById('overtimeList'),content=document.getElementById('overtimeContent');
-  content.innerHTML='<div class="overtime-item"><span class="overtime-name">'+currentEmployee.fullName+'</span><span class="overtime-hours">'+total.toFixed(2)+' ساعت</span></div><p style="margin-top:12px;font-size:13px;color:#742a2a;line-height:1.7">'+msg+'</p>';
+  content.innerHTML='<div class="overtime-item"><span class="overtime-name">'+currentEmployee.fullName+'</span><span class="overtime-hours">'+total.toFixed(2)+' ساعت</span></div><p style="margin-top:12px;font-size:13px;color:#fecaca;line-height:1.7">'+msg+'</p>';
   box.style.display='block';
   showStatus('اضافه کار: '+total.toFixed(2)+' ساعت','success');
-  await sendToBale('⏱️ '+msg);
+  sendToBale('⏱️ '+msg);
 };
 
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=e=>{
