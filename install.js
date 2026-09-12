@@ -1,4 +1,4 @@
-// ===== نصب PWA فقط اندروید =====
+// نصب PWA — اندروید
 function isAndroid() {
   return /Android/i.test(navigator.userAgent);
 }
@@ -11,10 +11,12 @@ function isStandalone() {
 let deferredInstallPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-  if (!isAndroid()) return;
   e.preventDefault();
   deferredInstallPrompt = e;
-  showInstallOverlay(true);
+  const hint = document.getElementById('installHint');
+  if (hint) hint.textContent = 'دکمه نصب آماده است — روی «نصب برنامه» بزنید.';
+  const btn = document.getElementById('installAppBtn');
+  if (btn) btn.disabled = false;
 });
 
 window.addEventListener('appinstalled', () => {
@@ -40,25 +42,48 @@ function hideInstallOverlay() {
 
 function setupInstallUI() {
   const btn = document.getElementById('installAppBtn');
+  const hint = document.getElementById('installHint');
+  const skip = document.getElementById('skipInstallBtn');
+
   if (btn) {
     btn.addEventListener('click', async () => {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        const choice = await deferredInstallPrompt.userChoice;
-        if (choice.outcome === 'accepted') {
-          localStorage.setItem('appInstalled', '1');
-          hideInstallOverlay();
+      btn.disabled = true;
+      btn.textContent = 'صبر کنید...';
+      try {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            localStorage.setItem('appInstalled', '1');
+            hideInstallOverlay();
+            return;
+          }
+          if (hint) hint.textContent = 'نصب لغو شد. دوباره تلاش کنید یا از منوی کروم نصب کنید.';
+        } else {
+          if (hint) {
+            hint.innerHTML =
+              'کروم پنجره نصب نداد.<br>' +
+              '۱) منوی <b>⋮</b> بالای کروم را بزنید<br>' +
+              '۲) گزینه <b>Install app</b> یا <b>Add to Home screen</b> را بزنید<br>' +
+              '۳) اگر نبود، چند ثانیه در صفحه بمانید و دوباره «نصب برنامه» را بزنید';
+          }
         }
-        deferredInstallPrompt = null;
-      } else {
-        const hint = document.getElementById('installHint');
-        if (hint) {
-          hint.textContent = 'منوی کروم (⋮) → Install app / نصب برنامه را بزنید. اگر نبود، چند ثانیه صبر کنید و دوباره تلاش کنید.';
-        }
+      } catch (err) {
+        if (hint) hint.textContent = 'خطا در نصب. از منوی کروم ⋮ → Install app استفاده کنید.';
       }
+      btn.disabled = false;
+      btn.textContent = 'نصب برنامه';
     });
   }
-  if (isAndroid() && !isStandalone()) {
+
+  if (skip) {
+    skip.addEventListener('click', () => {
+      localStorage.setItem('skipInstall', '1');
+      hideInstallOverlay();
+    });
+  }
+
+  if (isAndroid() && !isStandalone() && localStorage.getItem('skipInstall') !== '1') {
     showInstallOverlay();
   } else {
     hideInstallOverlay();
