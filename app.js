@@ -207,50 +207,113 @@ function playAlarmBeep(){const ctx=ensureAudio();if(!ctx){showStatus('صدا ف�
 function notifyReminder(title,body){playAlarmBeep();showStatus('🔔 '+body,'info');if('Notification' in window&&Notification.permission==='granted'){try{new Notification(title,{body:body,tag:'att-rem',renotify:true});}catch(e){}}}
 function dayKey(){const n=new Date();return n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();}
 function checkReminders(){const now=new Date();const h=now.getHours(),m=now.getMinutes();const dk=dayKey();if((h===6&&m>=58)||(h===7&&m<=2)){const key='morning_'+dk;if(!localStorage.getItem(key)){localStorage.setItem(key,'1');notifyReminder('یادآوری ورود','ساعت ۶:۵۸ — لطفاً ورود را ثبت کنید');}}if(h>16||(h===16&&m>=30)){if(m<=1||(m>=30&&m<=31)){const slotMin=(m<15)?0:30;const key='eve_'+dk+'_'+h+'_'+slotMin;if(!localStorage.getItem(key)){localStorage.setItem(key,'1');const mm=slotMin===0?'00':'30';const hh=(h<10?'0':'')+h;notifyReminder('یادآوری خروج','ساعت '+hh+':'+mm+' — لطفاً خروج را ثبت کنید');}}}}
-function setupTestAlarmBtn(){const checkin=document.getElementById('checkin');if(!checkin||document.getElementById('testAlarmBtn'))return;const wrap=document.createElement('div');wrap.style.cssText='margin-top:16px;text-align:center';const btn=document.createElement('button');btn.id='testAlarmBtn';btn.className='btn-info';btn.textContent='🔔 تست صدای هشدار';btn.type='button';btn.onclick=function(){ensureAudio();playAlarmBeep();showStatus('اگر صدا شنیدید، هشدار فعال است','success');if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();};wrap.appendChild(btn);const ai=document.getElementById('aiSection');if(ai){checkin.insertBefore(wrap,ai);}else{checkin.appendChild(wrap);}}
-function startReminderLoop(){if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().catch(function(){});}function unlock(){ensureAudio();document.removeEventListener('click',unlock);document.removeEventListener('touchstart',unlock);}document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);setupTestAlarmBtn();checkReminders();setInterval(checkReminders,10000);}
+
+function setupTestAlarmBtn(){
+  if(document.getElementById('testAlarmBtn')) return;
+  const btn=document.createElement('button');
+  btn.id='testAlarmBtn';
+  btn.type='button';
+  btn.title='تست هشدار';
+  btn.setAttribute('aria-label','تست هشدار');
+  btn.textContent='🔔';
+  btn.style.cssText='position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:5000;width:36px;height:36px;min-width:36px;padding:0;border-radius:50%;border:1px solid rgba(148,163,184,0.25);background:rgba(30,41,59,0.9);color:#fff;font-size:16px;box-shadow:0 2px 10px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  btn.onclick=function(){
+    ensureAudio();
+    playAlarmBeep();
+    showStatus('اگر صدا شنیدید، هشدار فعال است','success');
+    if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+  };
+  document.body.appendChild(btn);
+}
+function startReminderLoop(){
+  if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission().catch(function(){});}
+  function unlock(){ensureAudio();document.removeEventListener('click',unlock);document.removeEventListener('touchstart',unlock);}
+  document.addEventListener('click',unlock);
+  document.addEventListener('touchstart',unlock);
+  setupTestAlarmBtn();
+  checkReminders();
+  setInterval(checkReminders,10000);
+}
 startReminderLoop();
 
-const AI_SYSTEM='تو یک دستیار هوشمند فارسی‌زبان هستی که به کارکنان در سامانه ثبت ورود و خروج کمک می‌کنی. پاسخ‌ها کوتاه، واضح و مفید باشند. اگر سوال درباره ورود/خروج، اضافه کار یا قوانین کار بود راهنمایی کن. اگر سوال عمومی بود هم جواب بده.';
-function aiAppend(role,text){const box=document.getElementById('aiMessages');if(!box)return null;const el=document.createElement('div');el.className='ai-msg '+role;el.textContent=text;box.appendChild(el);box.scrollTop=box.scrollHeight;return el;}
-async function askAI(question){
-  const prompt=AI_SYSTEM+'\n\nسوال کاربر: '+question+'\n\nپاسخ:';
-  const url='https://text.pollinations.ai/'+encodeURIComponent(prompt)+'?model=openai&lang=fa';
-  try{
-    const res=await fetch(url,{method:'GET',cache:'no-store'});
-    if(!res.ok)throw new Error('http '+res.status);
-    let text=(await res.text()).trim();
-    if(!text)throw new Error('empty');
-    return text.replace(/^پاسخ:\s*/i,'').trim();
-  }catch(e1){
-    try{
-      const res2=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt),{cache:'no-store'});
-      if(res2.ok){const t=(await res2.text()).trim();if(t)return t.replace(/^پاسخ:\s*/i,'').trim();}
-    }catch(e2){}
-    throw e1;
+function aiAppend(role,text){
+  const box=document.getElementById('aiMessages');
+  if(!box) return null;
+  const el=document.createElement('div');
+  el.className='ai-msg '+role;
+  el.textContent=text;
+  box.appendChild(el);
+  box.scrollTop=box.scrollHeight;
+  return el;
+}
+function localAIAnswer(q){
+  const s=(q||'').trim().toLowerCase();
+  const has=(...ws)=>ws.some(w=>s.includes(w));
+  if(has('ورود','خروج','ثبت ساعت','چطور ثبت','نحوه ثبت'))
+    return 'برای ثبت: دکمه «ورود» یا «خروج» را بزنید، ساعت را مثل آیفون انتخاب کنید و تأیید کنید. تاریخ همان روز خودکار است و به بله ارسال می‌شود.';
+  if(has('دوبار','تکرار','قبلا ثبت'))
+    return 'هر روز فقط یک ورود و یک خروج مجاز است. اگر قبلاً ثبت شده باشد پیام «امروز قبلاً ثبت شده» می‌آید.';
+  if(has('اضافه کار','اضافه‌کار','overtime'))
+    return 'اضافه کار از تاریخ ۲۱ ماه شمسی تا امروز حساب می‌شود. در تب «اضافه کار» دکمه محاسبه را بزنید؛ نتیجه در برنامه و بله می‌آید.';
+  if(has('قانون','قوانین','فرمول','چطور حساب'))
+    return 'ورود قبل از ۷ و خروج بعد از ۱۶:۳۰ می‌تواند اضافه کار بسازد؛ چهارشنبه و پنج‌شنبه قوانین خاص دارند و در محاسبه خودکار لحاظ می‌شوند.';
+  if(has('نصب','آیکون','صفحه اصلی','pwa','اپ'))
+    return 'در کروم منوی ⋮ را بزنید و Install app یا Add to Home screen را انتخاب کنید.';
+  if(has('هشدار','آلارم','زنگ','یادآوری','۶:۵۸','6:58'))
+    return 'حدود ۶:۵۸ یک‌بار و از ۱۶:۳۰ هر نیم‌ساعت یادآوری می‌آید. زنگ کوچک گوشه بالا برای تست صداست.';
+  if(has('بله','ربات','ارسال'))
+    return 'ورود، خروج، ثبت‌نام و محاسبه اضافه کار خودکار به ربات بله ارسال می‌شود.';
+  if(has('نام','پرسنلی','مشخصات','ثبت نام'))
+    return 'نام و شماره پرسنلی فقط بار اول گرفته می‌شود و در گوشی می‌ماند.';
+  if(has('سلام','درود','صبح بخیر','hi','hello'))
+    return 'سلام! درباره ورود/خروج، اضافه کار، نصب یا هشدار بپرسید.';
+  if(has('ممنون','مرسی','تشکر'))
+    return 'خواهش می‌کنم.';
+  if(has('ساعت چند','تاریخ امروز','امروز چندمه')){
+    const n=new Date();
+    return 'الان '+n.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'})+' — تاریخ: '+n.toLocaleDateString('fa-IR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   }
+  if(has('کمک','راهنما'))
+    return 'مثلاً بپرسید: چطور ورود ثبت کنم؟ اضافه کار چطور حساب می‌شود؟ چطور نصب کنم؟';
+  return null;
+}
+async function askAI(question){
+  const local=localAIAnswer(question);
+  if(local) return local;
+  try{
+    const short='به فارسی خیلی کوتاه جواب بده: '+question.slice(0,120);
+    const url='https://text.pollinations.ai/'+encodeURIComponent(short);
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),10000);
+    const res=await fetch(url,{cache:'no-store',signal:ctrl.signal});
+    clearTimeout(t);
+    if(res.ok){
+      const text=(await res.text()).trim();
+      if(text&&text.length>2&&!/Payment Required|403|error/i.test(text)) return text.slice(0,600);
+    }
+  }catch(e){}
+  return 'برای این سوال پاسخ آماده ندارم. درباره ورود، خروج، اضافه کار، نصب یا هشدار بپرسید.';
 }
 function setupAIChat(){
   const input=document.getElementById('aiInput');
   const btn=document.getElementById('aiSendBtn');
-  const box=document.getElementById('aiMessages');
-  if(!input||!btn||!box)return;
+  if(!input||!btn) return;
   let busy=false;
   async function send(){
     const q=input.value.trim();
-    if(!q||busy)return;
-    busy=true;btn.disabled=true;input.value='';input.style.height='40px';
+    if(!q||busy) return;
+    busy=true; btn.disabled=true; input.value=''; input.style.height='40px';
     aiAppend('user',q);
-    const typing=aiAppend('bot typing','در حال فکر کردن...');
+    const typing=aiAppend('bot typing','در حال پاسخ...');
     try{
       const answer=await askAI(q);
-      if(typing)typing.remove();
+      if(typing) typing.remove();
       aiAppend('bot',answer);
-    }catch(err){
-      if(typing)typing.remove();
-      aiAppend('bot','الان اتصال به هوش مصنوعی برقرار نشد. لطفاً چند ثانیه بعد دوباره تلاش کنید.');
+    }catch(e){
+      if(typing) typing.remove();
+      aiAppend('bot', localAIAnswer(q)||'پاسخ آماده نشد. سوال را ساده‌تر بپرسید.');
     }
-    busy=false;btn.disabled=false;input.focus();
+    busy=false; btn.disabled=false; input.focus();
   }
   btn.onclick=send;
   input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
@@ -259,4 +322,8 @@ function setupAIChat(){
 setupAIChat();
 
 loadMainScreen();
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').then(function(reg){reg.update();}).catch(function(){});});}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').then(function(reg){reg.update();}).catch(function(){});
+  });
+}
