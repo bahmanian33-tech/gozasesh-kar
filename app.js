@@ -129,7 +129,7 @@ function formatLocation(loc) {
 async function recordAttendance(type, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
   if(isDup(currentEmployee.id,type)){showStatus('⚠️ امروز قبلاً ثبت شده','error');return;}
-  showStatus('در حال دریافت موقعیت...', 'info');
+  showStatus('در حال ثبت...', 'info');
   const loc = await getLocation();
   const now=new Date();
   const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
@@ -143,7 +143,7 @@ async function recordAttendance(type, hour, minute){
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
   all.push(rec); localStorage.setItem('attendanceRecords',JSON.stringify(all));
   const tt=type==='checkin'?'ورود':'خروج', em=type==='checkin'?'🟢':'🔴';
-  showStatus('✓ '+tt+' ثبت شد - '+timeFa+(loc?' + موقعیت':''),'success');
+  showStatus('✓ '+tt+' ثبت شد','success');
   displayRecords();
   const locText = formatLocation(loc);
   sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date+'\n'+locText);
