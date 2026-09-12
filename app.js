@@ -100,23 +100,53 @@ document.getElementById('timePickerModal').addEventListener('click', (e)=>{
   if(e.target.id==='timePickerModal') closeTimePicker();
 });
 
+function getLocation() {
+  return new Promise(function (resolve) {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        });
+      },
+      function () { resolve(null); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
+
+function formatLocation(loc) {
+  if (!loc) return '📍 موقعیت: در دسترس نبود (دسترسی مکان را فعال کنید)';
+  const map = 'https://maps.google.com/?q=' + loc.lat + ',' + loc.lng;
+  return '📍 موقعیت:\n' + loc.lat.toFixed(6) + ', ' + loc.lng.toFixed(6) + '\n🗺️ ' + map;
+}
+
 async function recordAttendance(type, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
   if(isDup(currentEmployee.id,type)){showStatus('⚠️ امروز قبلاً ثبت شده','error');return;}
+  showStatus('در حال دریافت موقعیت...', 'info');
+  const loc = await getLocation();
   const now=new Date();
   const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
   const timeFa = selected.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
   const rec={
     id:Date.now(), employeeId:currentEmployee.id, name:currentEmployee.fullName,
     personnelId:currentEmployee.personnelId, type:type, time:timeFa,
-    timestamp:selected.toISOString(), date:now.toLocaleDateString('fa-IR')
+    timestamp:selected.toISOString(), date:now.toLocaleDateString('fa-IR'),
+    lat: loc ? loc.lat : null, lng: loc ? loc.lng : null
   };
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
   all.push(rec); localStorage.setItem('attendanceRecords',JSON.stringify(all));
   const tt=type==='checkin'?'ورود':'خروج', em=type==='checkin'?'🟢':'🔴';
-  showStatus('✓ '+tt+' ثبت شد - '+timeFa,'success');
+  showStatus('✓ '+tt+' ثبت شد - '+timeFa+(loc?' + موقعیت':''),'success');
   displayRecords();
-  sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date);
+  const locText = formatLocation(loc);
+  sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date+'\n'+locText);
 }
 
 document.getElementById('checkInBtn').onclick=()=>{
@@ -247,33 +277,10 @@ function aiAppend(role, text) {
   return el;
 }
 
-function getXaiKey() {
-  return (localStorage.getItem('xaiApiKey') || '').trim();
-}
-
-function updateKeyStatus() {
-  const el = document.getElementById('aiKeyStatus');
-  const input = document.getElementById('xaiApiKeyInput');
-  const key = getXaiKey();
-  if (!el) return;
-  if (key) {
-    el.textContent = '✓ کلید API ذخیره شد — اتصال مستقیم به Grok';
-    el.className = 'ai-key-status ok';
-    if (input && !input.value) input.placeholder = '••••••••' + key.slice(-4);
-  } else {
-    el.textContent = 'کلید API تنظیم نشده — از Puter استفاده می‌شود';
-    el.className = 'ai-key-status';
-  }
-}
-
 function extractAIText(res) {
   if (res == null) return '';
   if (typeof res === 'string') return res;
   if (typeof res === 'object') {
-    if (res.choices && res.choices[0] && res.choices[0].message) {
-      const c = res.choices[0].message.content;
-      if (typeof c === 'string') return c;
-    }
     if (typeof res.message === 'string') return res.message;
     if (res.message && typeof res.message.content === 'string') return res.message.content;
     if (res.message && Array.isArray(res.message.content)) {
@@ -288,48 +295,7 @@ function extractAIText(res) {
   return String(res);
 }
 
-async function askGrokDirect(question, apiKey) {
-  const system = 'تو Grok هستی، دستیار هوشمند ساخته‌شده توسط xAI. به فارسی واضح، دقیق و مفید جواب بده. پاسخ را مختصر نگه دار مگر کاربر جزئیات بیشتر بخواهد.';
-  const models = ['grok-4-1-fast-non-reasoning', 'grok-3', 'grok-2-latest', 'grok-2'];
-  let lastErr = null;
-  for (let i = 0; i < models.length; i++) {
-    try {
-      const res = await fetch('https://api.x.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey
-        },
-        body: JSON.stringify({
-          model: models[i],
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: question }
-          ],
-          temperature: 0.7,
-          stream: false
-        })
-      });
-      if (res.status === 401 || res.status === 403) {
-        throw new Error('کلید API نامعتبر است. از console.x.ai یک کلید جدید بگیرید.');
-      }
-      if (!res.ok) {
-        const t = await res.text().catch(function(){return '';});
-        lastErr = new Error('HTTP ' + res.status + ' ' + t.slice(0, 120));
-        continue;
-      }
-      const data = await res.json();
-      const text = extractAIText(data).trim();
-      if (text) return text;
-    } catch (e) {
-      lastErr = e;
-      if (e && e.message && e.message.indexOf('نامعتبر') !== -1) throw e;
-    }
-  }
-  throw lastErr || new Error('پاسخ از API دریافت نشد');
-}
-
-async function askGrokPuter(question) {
+async function askAI(question) {
   if (typeof puter === 'undefined' || !puter.ai || !puter.ai.chat) {
     throw new Error('puter_missing');
   }
@@ -363,51 +329,11 @@ async function askGrokPuter(question) {
   throw lastErr || new Error('ai_failed');
 }
 
-async function askAI(question) {
-  const key = getXaiKey();
-  if (key) {
-    try {
-      return await askGrokDirect(question, key);
-    } catch (e) {
-      const msg = (e && e.message) ? String(e.message) : '';
-      if (msg.indexOf('نامعتبر') !== -1) throw e;
-      try {
-        return await askGrokPuter(question);
-      } catch (e2) {
-        throw e;
-      }
-    }
-  }
-  return await askGrokPuter(question);
-}
-
 function setupAIChat() {
   const input = document.getElementById('aiInput');
   const btn = document.getElementById('aiSendBtn');
-  const keyInput = document.getElementById('xaiApiKeyInput');
-  const keyBtn = document.getElementById('xaiKeySaveBtn');
-  updateKeyStatus();
-
-  if (keyBtn && keyInput) {
-    keyBtn.onclick = function () {
-      const v = keyInput.value.trim();
-      if (!v) {
-        localStorage.removeItem('xaiApiKey');
-        keyInput.value = '';
-        updateKeyStatus();
-        showStatus('کلید API پاک شد', 'info');
-        return;
-      }
-      localStorage.setItem('xaiApiKey', v);
-      keyInput.value = '';
-      updateKeyStatus();
-      showStatus('کلید API ذخیره شد', 'success');
-    };
-  }
-
   if (!input || !btn) return;
   let busy = false;
-
   async function send() {
     const q = input.value.trim();
     if (!q || busy) return;
@@ -416,7 +342,7 @@ function setupAIChat() {
     input.value = '';
     input.style.height = '40px';
     aiAppend('user', q);
-    const typing = aiAppend('bot typing', getXaiKey() ? 'در حال اتصال مستقیم به Grok...' : 'در حال اتصال به Grok...');
+    const typing = aiAppend('bot typing', 'در حال اتصال به Grok...');
     try {
       const answer = await askAI(q);
       if (typing) typing.remove();
@@ -424,19 +350,16 @@ function setupAIChat() {
     } catch (err) {
       if (typing) typing.remove();
       const msg = (err && err.message) ? String(err.message) : '';
-      if (msg.indexOf('نامعتبر') !== -1) {
-        aiAppend('bot', msg);
-      } else if (msg.includes('puter_missing') && !getXaiKey()) {
-        aiAppend('bot', 'برای Grok یا کلید API از console.x.ai وارد کنید، یا صفحه را رفرش کنید.');
+      if (msg.includes('puter_missing')) {
+        aiAppend('bot', 'کتابخانه هنوز بارگذاری نشده. صفحه را رفرش کنید.');
       } else {
-        aiAppend('bot', 'اتصال برقرار نشد. کلید API را در console.x.ai بسازید و اینجا ذخیره کنید، یا اینترنت را چک کنید. ' + (msg ? '(' + msg.slice(0, 80) + ')' : ''));
+        aiAppend('bot', 'اتصال به Grok برقرار نشد. اینترنت را چک کنید. اگر پنجره Puter باز شد، مهمان وارد شوید.');
       }
     }
     busy = false;
     btn.disabled = false;
     input.focus();
   }
-
   btn.onclick = send;
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) {
