@@ -159,6 +159,30 @@
         flex-shrink: 0;
       }
       .ai-send-btn:disabled { opacity: 0.5; }
+      .ai-key-row {
+        display: flex; gap: 6px; margin-bottom: 8px; align-items: center;
+      }
+      .ai-key-row input {
+        flex: 1; min-height: 34px; border-radius: 10px; padding: 6px 10px;
+        border: 1px solid rgba(148,163,184,0.25);
+        background: rgba(15,23,42,0.9); color: #e2e8f0;
+        font-size: 12px; font-family: ui-monospace, monospace;
+      }
+      .ai-key-row input:focus {
+        outline: none; border-color: #818cf8;
+        box-shadow: 0 0 0 2px rgba(129,140,248,0.2);
+      }
+      .ai-key-btn {
+        min-width: 36px !important; width: auto; height: 34px;
+        padding: 0 10px !important; border-radius: 10px !important;
+        font-size: 12px !important; background: rgba(99,102,241,0.35) !important;
+        color: #e0e7ff !important; border: 1px solid rgba(129,140,248,0.35) !important;
+        box-shadow: none !important;
+      }
+      .ai-key-status {
+        font-size: 11px; color: #94a3b8; margin-bottom: 6px;
+      }
+      .ai-key-status.ok { color: #6ee7b7; }
     </style>
 </head>
 <body>
@@ -233,8 +257,13 @@
                             <span>متصل به Grok (xAI)</span>
                         </div>
                     </div>
+                    <div class="ai-key-status" id="aiKeyStatus">کلید API تنظیم نشده — از Puter استفاده می‌شود</div>
+                    <div class="ai-key-row">
+                        <input type="password" id="xaiApiKeyInput" placeholder="کلید API از console.x.ai" autocomplete="off" spellcheck="false">
+                        <button type="button" class="ai-key-btn" id="xaiKeySaveBtn">ذخیره</button>
+                    </div>
                     <div class="ai-messages" id="aiMessages">
-                        <div class="ai-msg bot">سلام! من Grok هستم. هر سوالی دارید بپرسید.</div>
+                        <div class="ai-msg bot">سلام! من Grok هستم. هر سوالی دارید بپرسید. برای اتصال مستقیم، کلید API خود را از console.x.ai وارد کنید.</div>
                     </div>
                     <div class="ai-input-row">
                         <textarea id="aiInput" rows="1" placeholder="هر سوالی بنویسید..."></textarea>
