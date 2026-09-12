@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendance-v11';
+const CACHE_NAME = 'attendance-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -8,8 +8,6 @@ const ASSETS = [
   './manifest.webmanifest',
   './icon-192.svg',
   './icon-512.svg',
-  './icon-192-maskable.svg',
-  './icon-512-maskable.svg',
   './apple-touch-icon.svg'
 ];
 self.addEventListener('install', e => {
@@ -23,11 +21,11 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  if (url.includes('tapi.bale.ai') || url.includes('corsproxy.io')) {
+  if (url.includes('tapi.bale.ai') || url.includes('corsproxy.io') || url.includes('pollinations.ai')) {
     e.respondWith(fetch(e.request).catch(() => new Response('{"ok":false}', {headers:{'Content-Type':'application/json'}})));
     return;
   }
-  if (/index\.html|app\.js|install\.js|styles\.css|manifest|icon-/.test(url)) {
+  if (/index\.html|app\.js|install\.js|styles\.css|manifest/.test(url)) {
     e.respondWith(
       fetch(e.request).then(res => {
         const copy = res.clone();
