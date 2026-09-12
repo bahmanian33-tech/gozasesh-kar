@@ -18,6 +18,32 @@ function showStatus(m,t){const e=document.getElementById('statusMessage');e.inne
 function updateUserInfo(){if(!currentEmployee)return;document.getElementById('userFullName').textContent=currentEmployee.fullName;document.getElementById('userPersonnelId').textContent='شماره پرسنلی: '+currentEmployee.personnelId;}
 function loadMainScreen(){currentEmployee=JSON.parse(localStorage.getItem('currentEmployee')||'null');if(!currentEmployee){document.getElementById('registerScreen').classList.add('active');document.getElementById('mainScreen').classList.remove('active');}else{document.getElementById('registerScreen').classList.remove('active');document.getElementById('mainScreen').classList.add('active');updateUserInfo();}}
 
+function getLocation() {
+  return new Promise(function (resolve) {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        });
+      },
+      function () { resolve(null); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
+
+function formatLocation(loc) {
+  if (!loc) return '📍 موقعیت: در دسترس نبود (دسترسی مکان را فعال کنید)';
+  const map = 'https://maps.google.com/?q=' + loc.lat + ',' + loc.lng;
+  return '📍 موقعیت:\n' + loc.lat.toFixed(6) + ', ' + loc.lng.toFixed(6) + '\n🗺️ ' + map;
+}
+
 document.getElementById('registerBtn').onclick=async()=>{
   const f=document.getElementById('firstName').value.trim(),l=document.getElementById('lastName').value.trim(),p=document.getElementById('registerPersonnelId').value.trim();
   if(!f||!l){showStatus('لطفاً نام و نام خانوادگی را وارد کنید','error');return;}
@@ -25,6 +51,8 @@ document.getElementById('registerBtn').onclick=async()=>{
   currentEmployee={id:Date.now(),firstName:f,lastName:l,personnelId:p,fullName:f+' '+l};
   localStorage.setItem('currentEmployee',JSON.stringify(currentEmployee));
   document.getElementById('firstName').value='';document.getElementById('lastName').value='';document.getElementById('registerPersonnelId').value='';
+  showStatus('در حال ثبت و تأیید موقعیت...','info');
+  await getLocation();
   showStatus('✓ '+currentEmployee.fullName+' ثبت شد','success');
   await sendToBale('✅ ثبت‌نام\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId);
   loadMainScreen();
@@ -99,32 +127,6 @@ document.getElementById('tpConfirm').onclick=async()=>{
 document.getElementById('timePickerModal').addEventListener('click', (e)=>{
   if(e.target.id==='timePickerModal') closeTimePicker();
 });
-
-function getLocation() {
-  return new Promise(function (resolve) {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      function (pos) {
-        resolve({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
-        });
-      },
-      function () { resolve(null); },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-  });
-}
-
-function formatLocation(loc) {
-  if (!loc) return '📍 موقعیت: در دسترس نبود (دسترسی مکان را فعال کنید)';
-  const map = 'https://maps.google.com/?q=' + loc.lat + ',' + loc.lng;
-  return '📍 موقعیت:\n' + loc.lat.toFixed(6) + ', ' + loc.lng.toFixed(6) + '\n🗺️ ' + map;
-}
 
 async function recordAttendance(type, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
