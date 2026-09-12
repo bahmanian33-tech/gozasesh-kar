@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendance-v15';
+const CACHE_NAME = 'attendance-v16';
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  if (url.includes('tapi.bale.ai') || url.includes('corsproxy.io') || url.includes('pollinations.ai') || url.includes('puter.com')) {
+  if (url.includes('tapi.bale.ai') || url.includes('corsproxy.io') || url.includes('pollinations.ai') || url.includes('puter.com') || url.includes('api.x.ai')) {
     e.respondWith(fetch(e.request).catch(() => new Response('{"ok":false}', {headers:{'Content-Type':'application/json'}})));
     return;
   }
