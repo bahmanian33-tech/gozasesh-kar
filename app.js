@@ -1,8 +1,10 @@
+/* v25-edit-wheel */
 const BALE_TOKEN='666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
 const BALE_CHAT_ID='1163569220';
 const BALE_API='https://tapi.bale.ai/bot'+BALE_TOKEN;
 let currentEmployee=JSON.parse(localStorage.getItem('currentEmployee')||'null');
 let pendingAttendanceType=null;
+let pendingEditIndex=null;
 
 async function sendToBale(text){
   const u=BALE_API+'/sendMessage?'+new URLSearchParams({chat_id:BALE_CHAT_ID,text});
@@ -103,6 +105,7 @@ function bindWheel(el){
 }
 function openTimePicker(type){
   pendingAttendanceType=type;
+  pendingEditIndex=null;
   const modal=document.getElementById('timePickerModal');
   const title=document.getElementById('tpTitle');
   const dateLabel=document.getElementById('tpDateLabel');
@@ -122,13 +125,23 @@ function closeTimePicker(){
   modal.classList.remove('show');
   modal.setAttribute('aria-hidden','true');
   pendingAttendanceType=null;
+  pendingEditIndex=null;
 }
 document.getElementById('tpCancel').onclick=()=>closeTimePicker();
 document.getElementById('tpConfirm').onclick=async()=>{
   const h=readWheel(document.getElementById('tpHour'));
   const m=readWheel(document.getElementById('tpMinute'));
+  const editIdx = pendingEditIndex;
   const type=pendingAttendanceType;
-  closeTimePicker();
+  const modal=document.getElementById('timePickerModal');
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  pendingAttendanceType=null;
+  pendingEditIndex=null;
+  if(editIdx!==null && editIdx!==undefined){
+    applyEditTime(editIdx, h, m);
+    return;
+  }
   if(!type) return;
   await recordAttendance(type, h, m);
 };
@@ -215,15 +228,29 @@ function displayRecords(){
 function editRecordTime(index){
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
   if(index<0||index>=all.length){showStatus('رکورد پیدا نشد','error');return;}
+  pendingEditIndex=index;
+  pendingAttendanceType=null;
   const rec=all[index];
   const hm=getHM(rec)||{h:12,m:0};
-  const input=prompt('ساعت صحیح را وارد کنید (مثال: 18:20)', pad2(hm.h)+':'+pad2(hm.m));
-  if(input===null)return;
-  let t=String(input).trim().replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-  const p=t.split(/[:：.]/);
-  if(p.length<2){showStatus('فرمت اشتباه — مثل 18:20 بنویسید','error');return;}
-  const h=parseInt(p[0],10), m=parseInt(p[1],10);
-  if(isNaN(h)||isNaN(m)||h<0||h>23||m<0||m>59){showStatus('ساعت نامعتبر','error');return;}
+  const modal=document.getElementById('timePickerModal');
+  const title=document.getElementById('tpTitle');
+  const dateLabel=document.getElementById('tpDateLabel');
+  const hourEl=document.getElementById('tpHour');
+  const minEl=document.getElementById('tpMinute');
+  title.textContent = (rec.type==='checkin'?'تصحیح ورود':'تصحیح خروج');
+  dateLabel.textContent = (rec.date||'') + ' — ساعت فعلی: ' + (rec.time||'');
+  buildWheel(hourEl, 24, hm.h);
+  buildWheel(minEl, 60, hm.m);
+  bindWheel(hourEl); bindWheel(minEl);
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+
+function applyEditTime(index, h, m){
+  if(index===null||index===undefined) return false;
+  const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
+  if(index<0||index>=all.length){showStatus('رکورد پیدا نشد','error');return true;}
+  const rec=all[index];
   rec.time=pad2(h)+':'+pad2(m);
   rec.hour=h;
   rec.minute=m;
@@ -238,6 +265,7 @@ function editRecordTime(index){
   localStorage.setItem('attendanceRecords',JSON.stringify(all));
   displayRecords();
   showStatus('✓ ساعت به '+rec.time+' تصحیح شد','success');
+  return true;
 }
 
 function getHM(rec){
