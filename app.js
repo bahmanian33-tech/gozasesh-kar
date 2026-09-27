@@ -176,9 +176,68 @@ document.getElementById('checkOutBtn').onclick=()=>{
 
 function displayRecords(){
   const records=JSON.parse(localStorage.getItem('attendanceRecords')||'[]'),list=document.getElementById('recordsList');
-  if(!list)return;if(!records.length){list.innerHTML='<p style="text-align:center;color:#64748b">هنوز سابقه‌ای ثبت نشده</p>';return;}
-  const g={};records.forEach(r=>{const k=r.employeeId+'_'+r.date;if(!g[k])g[k]={name:r.name,personnelId:r.personnelId,date:r.date,ci:'',co:''};if(r.type==='checkin')g[k].ci=r.time;else g[k].co=r.time;});
-  list.innerHTML=Object.entries(g).map(([k,x])=>'<div class="record-day-item"><p class="day-name">'+x.name+'</p><p class="day-id">'+x.personnelId+'</p><p class="day-date">'+x.date+'</p><div class="time-columns"><div class="time-column checkin-column"><div class="column-header">ورود</div><div class="column-time">'+(x.ci||'-')+'</div></div><div class="time-column checkout-column"><div class="column-header">خروج</div><div class="column-time">'+(x.co||'-')+'</div></div></div></div>').join('');
+  if(!list)return;
+  if(!records.length){list.innerHTML='<p style="text-align:center;color:#64748b">هنوز سابقه‌ای ثبت نشده</p>';return;}
+  const sorted = records.slice().sort((a,b)=>{
+    const ta = typeof a.timestamp==='number'?a.timestamp:Date.parse(a.timestamp)||0;
+    const tb = typeof b.timestamp==='number'?b.timestamp:Date.parse(b.timestamp)||0;
+    return tb-ta;
+  });
+  list.innerHTML = sorted.map((r)=>{
+    const realIdx = records.indexOf(r);
+    const tt = r.type==='checkin'?'ورود':'خروج';
+    const color = r.type==='checkin'?'#4ade80':'#f87171';
+    return '<div class="record-day-item" style="margin-bottom:10px">'
+      +'<p class="day-name">'+tt+' — '+(r.name||'')+'</p>'
+      +'<p class="day-id">'+(r.personnelId||'')+'</p>'
+      +'<p class="day-date">'+r.date+' — ساعت <b style="color:'+color+'">'+r.time+'</b></p>'
+      +'<div style="display:flex;gap:8px;margin-top:8px">'
+      +'<button type="button" class="btn-info" style="flex:1;padding:8px;font-size:13px;min-width:0" data-edit="'+realIdx+'">✏️ تصحیح ساعت</button>'
+      +'<button type="button" class="btn-danger" style="flex:1;padding:8px;font-size:13px;min-width:0" data-del="'+realIdx+'">🗑️ حذف</button>'
+      +'</div></div>';
+  }).join('');
+  list.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.onclick=()=>editRecordTime(parseInt(btn.getAttribute('data-edit'),10));
+  });
+  list.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick=()=>{
+      const i=parseInt(btn.getAttribute('data-del'),10);
+      if(!confirm('این مورد حذف شود؟'))return;
+      const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
+      all.splice(i,1);
+      localStorage.setItem('attendanceRecords',JSON.stringify(all));
+      displayRecords();
+      showStatus('حذف شد','success');
+    };
+  });
+}
+
+function editRecordTime(index){
+  const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
+  if(index<0||index>=all.length){showStatus('رکورد پیدا نشد','error');return;}
+  const rec=all[index];
+  const hm=getHM(rec)||{h:12,m:0};
+  const input=prompt('ساعت صحیح را وارد کنید (مثال: 18:20)', pad2(hm.h)+':'+pad2(hm.m));
+  if(input===null)return;
+  let t=String(input).trim().replace(/[۰-۹]/g,d=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+  const p=t.split(/[:：.]/);
+  if(p.length<2){showStatus('فرمت اشتباه — مثل 18:20 بنویسید','error');return;}
+  const h=parseInt(p[0],10), m=parseInt(p[1],10);
+  if(isNaN(h)||isNaN(m)||h<0||h>23||m<0||m>59){showStatus('ساعت نامعتبر','error');return;}
+  rec.time=pad2(h)+':'+pad2(m);
+  rec.hour=h;
+  rec.minute=m;
+  let base=rec.timestamp;
+  if(typeof base==='string') base=Date.parse(base);
+  if(typeof base!=='number'||isNaN(base)) base=Date.now();
+  const d=new Date(base);
+  d.setHours(h,m,0,0);
+  rec.timestamp=d.getTime();
+  rec.dow=d.getDay();
+  all[index]=rec;
+  localStorage.setItem('attendanceRecords',JSON.stringify(all));
+  displayRecords();
+  showStatus('✓ ساعت به '+rec.time+' تصحیح شد','success');
 }
 
 function getHM(rec){
