@@ -20,18 +20,11 @@ function loadMainScreen(){currentEmployee=JSON.parse(localStorage.getItem('curre
 
 function getLocation() {
   return new Promise(function (resolve) {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
+    if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
       function (pos) {
         localStorage.setItem('locationGranted', '1');
-        resolve({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
-        });
+        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
       },
       function () { resolve(null); },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -46,9 +39,7 @@ function formatLocation(loc) {
 }
 
 async function ensureLocationPermission() {
-  if (localStorage.getItem('locationGranted') === '1') {
-    return getLocation();
-  }
+  if (localStorage.getItem('locationGranted') === '1') return getLocation();
   try {
     if (navigator.permissions && navigator.permissions.query) {
       const st = await navigator.permissions.query({ name: 'geolocation' });
@@ -151,12 +142,16 @@ async function recordAttendance(type, hour, minute){
   showStatus('در حال ثبت...', 'info');
   const loc = await ensureLocationPermission();
   const now=new Date();
-  const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
-  const timeFa = selected.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+  const h = Number(hour)|0, m = Number(minute)|0;
+  const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  const timeFa = pad2(h)+':'+pad2(m);
   const rec={
     id:Date.now(), employeeId:currentEmployee.id, name:currentEmployee.fullName,
     personnelId:currentEmployee.personnelId, type:type, time:timeFa,
-    timestamp:selected.toISOString(), date:now.toLocaleDateString('fa-IR'),
+    hour:h, minute:m,
+    timestamp:selected.getTime(),
+    date:now.toLocaleDateString('fa-IR'),
+    dow: selected.getDay(),
     lat: loc ? loc.lat : null, lng: loc ? loc.lng : null
   };
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
@@ -186,51 +181,111 @@ function displayRecords(){
   list.innerHTML=Object.entries(g).map(([k,x])=>'<div class="record-day-item"><p class="day-name">'+x.name+'</p><p class="day-id">'+x.personnelId+'</p><p class="day-date">'+x.date+'</p><div class="time-columns"><div class="time-column checkin-column"><div class="column-header">ورود</div><div class="column-time">'+(x.ci||'-')+'</div></div><div class="time-column checkout-column"><div class="column-header">خروج</div><div class="column-time">'+(x.co||'-')+'</div></div></div></div>').join('');
 }
 
-function periodStart21(){
-  const now=new Date();
-  const fmt=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'});
-  const p=fmt.formatToParts(now);
-  const g=t=>parseInt(p.find(x=>x.type===t).value,10);
-  let y=g('year'),m=g('month'),d=g('day');
-  if(d<21){m-=1;if(m<1){m=12;y-=1;}}
-  for(let i=0;i<70;i++){
-    const dt=new Date(now.getTime()-i*86400000);
-    const fp=fmt.formatToParts(dt);
-    if(parseInt(fp.find(x=>x.type==='year').value,10)===y&&parseInt(fp.find(x=>x.type==='month').value,10)===m&&parseInt(fp.find(x=>x.type==='day').value,10)===21){
-      return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),0,0,0,0);
+function getHM(rec){
+  if(rec && typeof rec.hour === 'number' && typeof rec.minute === 'number'){
+    return { h: rec.hour, m: rec.minute };
+  }
+  if(rec && rec.time && typeof rec.time === 'string'){
+    let t = rec.time.replace(/[۰-۹]/g, function(d){
+      return String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+    }).replace(/[٠-٩]/g, function(d){
+      return String('٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+    });
+    const p = t.split(/[:：]/);
+    if(p.length >= 2){
+      const h = parseInt(p[0],10), m = parseInt(p[1],10);
+      if(!isNaN(h) && !isNaN(m)) return { h:h, m:m };
     }
   }
-  const f=new Date(now.getTime()-21*86400000);f.setHours(0,0,0,0);return f;
+  let ts = rec && rec.timestamp;
+  if(typeof ts === 'string') ts = Date.parse(ts);
+  if(typeof ts === 'number' && !isNaN(ts)){
+    const d = new Date(ts);
+    if(!isNaN(d.getTime())) return { h: d.getHours(), m: d.getMinutes() };
+  }
+  return null;
 }
-function dayOT(cin,cout,dow){
-  // اضافه‌کار: از ۱۶:۳۰؛ چهارشنبه از ۱۵:۳۰ — خروجی به دقیقه
-  if(!cin||!cout)return 0;
-  const coH=cout.getHours(), coM=cout.getMinutes();
-  const endMin = coH*60 + coM;
+
+function getDow(rec){
+  if(typeof rec.dow === 'number') return rec.dow;
+  let ts = rec.timestamp;
+  if(typeof ts === 'string') ts = Date.parse(ts);
+  if(typeof ts === 'number' && !isNaN(ts)){
+    const d = new Date(ts);
+    if(!isNaN(d.getTime())) return d.getDay();
+  }
+  return new Date().getDay();
+}
+
+function overtimeMinutes(checkinHM, checkoutHM, dow){
+  if(!checkoutHM) return 0;
+  const endMin = checkoutHM.h * 60 + checkoutHM.m;
+  if(dow === 4){
+    if(!checkinHM){
+      const start = 7*60;
+      const end = Math.min(endMin, 17*60);
+      return end > start ? end - start : 0;
+    }
+    const startMin = checkinHM.h * 60 + checkinHM.m;
+    return endMin > startMin ? endMin - startMin : 0;
+  }
   const startMin = (dow === 3) ? (15*60 + 30) : (16*60 + 30);
   const ot = endMin - startMin;
   return ot > 0 ? ot : 0;
+}
+
+function periodStart21(){
+  const now=new Date();
+  try{
+    const fmt=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'});
+    const p=fmt.formatToParts(now);
+    const g=t=>parseInt(p.find(x=>x.type===t).value,10);
+    let y=g('year'),m=g('month'),d=g('day');
+    if(d<21){m-=1;if(m<1){m=12;y-=1;}}
+    for(let i=0;i<70;i++){
+      const dt=new Date(now.getTime()-i*86400000);
+      const fp=fmt.formatToParts(dt);
+      if(parseInt(fp.find(x=>x.type==='year').value,10)===y&&parseInt(fp.find(x=>x.type==='month').value,10)===m&&parseInt(fp.find(x=>x.type==='day').value,10)===21){
+        return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),0,0,0,0);
+      }
+    }
+  }catch(e){}
+  const f=new Date(now.getTime()-40*86400000);f.setHours(0,0,0,0);return f;
 }
 
 document.getElementById('calculateBtn').onclick=async()=>{
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
   const records=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
   if(!records.length){showStatus('سابقه‌ای برای محاسبه وجود ندارد','error');return;}
-  const start=periodStart21(),now=new Date();
+  const start=periodStart21(), now=new Date();
   const mine=records.filter(r=>{
-    if(String(r.employeeId)!==String(currentEmployee.id)&&r.name!==currentEmployee.fullName)return false;
-    const ts=new Date(r.timestamp);return ts>=start&&ts<=now;
+    if(String(r.employeeId)!==String(currentEmployee.id) && r.name!==currentEmployee.fullName) return false;
+    let ts = r.timestamp;
+    if(typeof ts === 'string') ts = Date.parse(ts);
+    if(typeof ts !== 'number' || isNaN(ts)) return true;
+    return ts >= start.getTime() && ts <= now.getTime();
   });
   if(!mine.length){showStatus('در این بازه سابقه‌ای نیست','info');return;}
+
   const g={};
   mine.forEach(r=>{
-    const k=r.date;if(!g[k])g[k]={ci:null,co:null,dow:new Date(r.timestamp).getDay()};
-    const ts=new Date(r.timestamp);
-    if(r.type==='checkin'){if(!g[k].ci||ts<g[k].ci)g[k].ci=ts;}
-    else{if(!g[k].co||ts>g[k].co)g[k].co=ts;}
+    const k = r.date || 'unknown';
+    if(!g[k]) g[k] = { ci:null, co:null, dow: getDow(r) };
+    if(r.type==='checkin'){
+      g[k].ci = getHM(r);
+      if(typeof r.dow === 'number') g[k].dow = r.dow;
+    } else if(r.type==='checkout'){
+      g[k].co = getHM(r);
+      if(typeof r.dow === 'number') g[k].dow = r.dow;
+    }
   });
-  let total=0;Object.values(g).forEach(x=>{total+=dayOT(x.ci,x.co,x.dow);});
-  total=Math.round(total);
+
+  let total=0;
+  Object.values(g).forEach(x=>{
+    total += overtimeMinutes(x.ci, x.co, x.dow);
+  });
+  total = Math.round(total);
+
   let monthName='';
   try{monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{month:'long'}).format(start);}catch(e){monthName='';}
   const msg='اضافه کار «'+currentEmployee.fullName+'» از تاریخ ۲۱ '+monthName+' تا کنون برابر با '+total+' دقیقه است';
