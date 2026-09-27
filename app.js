@@ -1,4 +1,4 @@
-/* v25-edit-wheel */
+/* v26-ot-hours */
 const BALE_TOKEN='666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
 const BALE_CHAT_ID='1163569220';
 const BALE_API='https://tapi.bale.ai/bot'+BALE_TOKEN;
@@ -73,6 +73,15 @@ setInterval(updateTime,1000);updateTime();
 
 function isDup(id,type){const r=JSON.parse(localStorage.getItem('attendanceRecords')||'[]'),t=new Date().toLocaleDateString('fa-IR');return!!r.find(x=>x.employeeId===id&&x.date===t&&x.type===type);}
 function pad2(n){return (n<10?'0':'')+n;}
+
+function formatOTMinutes(totalMin){
+  totalMin = Math.max(0, Math.round(Number(totalMin)||0));
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if(h === 0) return m + ' دقیقه';
+  if(m === 0) return h + ' ساعت';
+  return h + ' ساعت و ' + m + ' دقیقه';
+}
 
 function buildWheel(el, count, selected){
   el.innerHTML='';
@@ -375,11 +384,12 @@ document.getElementById('calculateBtn').onclick=async()=>{
 
   let monthName='';
   try{monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{month:'long'}).format(start);}catch(e){monthName='';}
-  const msg='اضافه کار «'+currentEmployee.fullName+'» از تاریخ ۲۱ '+monthName+' تا کنون برابر با '+total+' دقیقه است';
+  const otText=formatOTMinutes(total);
+  const msg='اضافه کار «'+currentEmployee.fullName+'» از تاریخ ۲۱ '+monthName+' تا کنون برابر با '+otText+' است';
   const box=document.getElementById('overtimeList'),content=document.getElementById('overtimeContent');
-  content.innerHTML='<div class="overtime-item"><span class="overtime-name">'+currentEmployee.fullName+'</span><span class="overtime-hours">'+total+' دقیقه</span></div><p style="margin-top:12px;font-size:13px;color:#fecaca;line-height:1.7">'+msg+'</p>';
+  content.innerHTML='<div class="overtime-item"><span class="overtime-name">'+currentEmployee.fullName+'</span><span class="overtime-hours">'+otText+'</span></div><p style="margin-top:12px;font-size:13px;color:#fecaca;line-height:1.7">'+msg+'</p>';
   box.style.display='block';
-  showStatus('اضافه کار: '+total+' دقیقه','success');
+  showStatus('اضافه کار: '+otText,'success');
   sendToBale('⏱️ '+msg);
 };
 
