@@ -1,10 +1,11 @@
-/* v26-ot-hours */
+/* v27-shift-night */
 const BALE_TOKEN='666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
 const BALE_CHAT_ID='1163569220';
 const BALE_API='https://tapi.bale.ai/bot'+BALE_TOKEN;
 let currentEmployee=JSON.parse(localStorage.getItem('currentEmployee')||'null');
 let pendingAttendanceType=null;
 let pendingEditIndex=null;
+let currentShift = localStorage.getItem('currentShift') || 'day';
 
 async function sendToBale(text){
   const u=BALE_API+'/sendMessage?'+new URLSearchParams({chat_id:BALE_CHAT_ID,text});
@@ -17,7 +18,49 @@ async function sendToBale(text){
 }
 
 function showStatus(m,t){const e=document.getElementById('statusMessage');e.innerHTML='<div class="status-message status-'+t+'">'+m+'</div>';setTimeout(()=>e.innerHTML='',4000);}
-function updateUserInfo(){if(!currentEmployee)return;document.getElementById('userFullName').textContent=currentEmployee.fullName;document.getElementById('userPersonnelId').textContent='شماره پرسنلی: '+currentEmployee.personnelId;}
+function updateUserInfo(){if(!currentEmployee)return;document.getElementById('userFullName').textContent=currentEmployee.fullName;document.getElementById('userPersonnelId').textContent='شماره پرسنلی: '+currentEmployee.personnelId;ensureShiftUI();updateShiftUI();}
+
+function ensureShiftUI(){
+  if(document.getElementById('shiftToggleBox')) return;
+  const box = document.getElementById('userInfoBox') || document.querySelector('#checkin .info-section');
+  if(!box) return;
+  const div = document.createElement('div');
+  div.id = 'shiftToggleBox';
+  div.style.cssText = 'margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+  div.innerHTML =
+    '<span style="font-size:13px;color:#94a3b8;width:100%;margin-bottom:4px">نوع شیفت این هفته:</span>'+
+    '<button type="button" id="shiftDayBtn" style="flex:1;padding:10px;border-radius:12px;border:1px solid rgba(148,163,184,0.3);font-size:14px;cursor:pointer;min-width:0">☀️ شیفت روز</button>'+
+    '<button type="button" id="shiftNightBtn" style="flex:1;padding:10px;border-radius:12px;border:1px solid rgba(148,163,184,0.3);font-size:14px;cursor:pointer;min-width:0">🌙 شیفت شب</button>';
+  box.appendChild(div);
+  document.getElementById('shiftDayBtn').onclick = function(){ setShift('day'); };
+  document.getElementById('shiftNightBtn').onclick = function(){ setShift('night'); };
+  updateShiftUI();
+}
+function setShift(s){
+  currentShift = s;
+  localStorage.setItem('currentShift', s);
+  updateShiftUI();
+  showStatus(s==='night' ? '🌙 شیفت شب فعال شد' : '☀️ شیفت روز فعال شد', 'success');
+}
+function updateShiftUI(){
+  const d = document.getElementById('shiftDayBtn');
+  const n = document.getElementById('shiftNightBtn');
+  if(!d||!n) return;
+  if(currentShift==='night'){
+    n.style.background = 'linear-gradient(135deg,#6366f1,#4f46e5)';
+    n.style.color = '#fff';
+    n.style.borderColor = 'transparent';
+    d.style.background = 'rgba(30,41,59,0.8)';
+    d.style.color = '#94a3b8';
+  } else {
+    d.style.background = 'linear-gradient(135deg,#38bdf8,#0ea5e9)';
+    d.style.color = '#0f172a';
+    d.style.borderColor = 'transparent';
+    n.style.background = 'rgba(30,41,59,0.8)';
+    n.style.color = '#94a3b8';
+  }
+}
+
 function loadMainScreen(){currentEmployee=JSON.parse(localStorage.getItem('currentEmployee')||'null');if(!currentEmployee){document.getElementById('registerScreen').classList.add('active');document.getElementById('mainScreen').classList.remove('active');}else{document.getElementById('registerScreen').classList.remove('active');document.getElementById('mainScreen').classList.add('active');updateUserInfo();}}
 
 function getLocation() {
@@ -174,6 +217,7 @@ async function recordAttendance(type, hour, minute){
     timestamp:selected.getTime(),
     date:now.toLocaleDateString('fa-IR'),
     dow: selected.getDay(),
+    shift: currentShift || 'day',
     lat: loc ? loc.lat : null, lng: loc ? loc.lng : null
   };
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
@@ -182,7 +226,8 @@ async function recordAttendance(type, hour, minute){
   showStatus('✓ '+tt+' ثبت شد','success');
   displayRecords();
   const locText = formatLocation(loc);
-  sendToBale(em+' '+tt+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date+'\n'+locText);
+  const shiftLabel=(currentShift==='night'?'🌙 شیفت شب':'☀️ شیفت روز');
+  sendToBale(em+' '+tt+'\n'+shiftLabel+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date+'\n'+locText);
 }
 
 document.getElementById('checkInBtn').onclick=()=>{
@@ -209,8 +254,9 @@ function displayRecords(){
     const realIdx = records.indexOf(r);
     const tt = r.type==='checkin'?'ورود':'خروج';
     const color = r.type==='checkin'?'#4ade80':'#f87171';
+    const sh = r.shift==='night'?'🌙 شب':'☀️ روز';
     return '<div class="record-day-item" style="margin-bottom:10px">'
-      +'<p class="day-name">'+tt+' — '+(r.name||'')+'</p>'
+      +'<p class="day-name">'+tt+' — '+(r.name||'')+' <span style="font-size:12px;opacity:0.8">('+sh+')</span></p>'
       +'<p class="day-id">'+(r.personnelId||'')+'</p>'
       +'<p class="day-date">'+r.date+' — ساعت <b style="color:'+color+'">'+r.time+'</b></p>'
       +'<div style="display:flex;gap:8px;margin-top:8px">'
@@ -313,7 +359,26 @@ function getDow(rec){
   return new Date().getDay();
 }
 
-function overtimeMinutes(checkinHM, checkoutHM, dow){
+function overtimeMinutes(checkinHM, checkoutHM, dow, shift){
+  if(!checkoutHM && !checkinHM) return 0;
+  shift = shift || 'day';
+
+  if(shift === 'night'){
+    if(!checkinHM) return 0;
+    const startMin = checkinHM.h * 60 + checkinHM.m;
+    const endShift = 16 * 60;
+    if(startMin >= endShift) return 0;
+    let ot = endShift - startMin;
+    if(startMin < 13 * 60){
+      const exclStart = 13 * 60;
+      const exclEnd = 13 * 60 + 45;
+      const overlapStart = Math.max(startMin, exclStart);
+      const overlapEnd = Math.min(endShift, exclEnd);
+      if(overlapEnd > overlapStart) ot -= (overlapEnd - overlapStart);
+    }
+    return ot > 0 ? ot : 0;
+  }
+
   if(!checkoutHM) return 0;
   const endMin = checkoutHM.h * 60 + checkoutHM.m;
   if(dow === 4){
@@ -325,8 +390,8 @@ function overtimeMinutes(checkinHM, checkoutHM, dow){
     const startMin = checkinHM.h * 60 + checkinHM.m;
     return endMin > startMin ? endMin - startMin : 0;
   }
-  const startMin = (dow === 3) ? (15*60 + 30) : (16*60 + 30);
-  const ot = endMin - startMin;
+  const thresh = (dow === 3) ? (15*60 + 30) : (16*60 + 30);
+  const ot = endMin - thresh;
   return ot > 0 ? ot : 0;
 }
 
@@ -366,7 +431,8 @@ document.getElementById('calculateBtn').onclick=async()=>{
   const g={};
   mine.forEach(r=>{
     const k = r.date || 'unknown';
-    if(!g[k]) g[k] = { ci:null, co:null, dow: getDow(r) };
+    if(!g[k]) g[k] = { ci:null, co:null, dow: getDow(r), shift: r.shift || 'day' };
+    if(r.shift) g[k].shift = r.shift;
     if(r.type==='checkin'){
       g[k].ci = getHM(r);
       if(typeof r.dow === 'number') g[k].dow = r.dow;
@@ -378,7 +444,7 @@ document.getElementById('calculateBtn').onclick=async()=>{
 
   let total=0;
   Object.values(g).forEach(x=>{
-    total += overtimeMinutes(x.ci, x.co, x.dow);
+    total += overtimeMinutes(x.ci, x.co, x.dow, x.shift);
   });
   total = Math.round(total);
 
