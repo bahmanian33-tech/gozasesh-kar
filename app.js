@@ -1,4 +1,4 @@
-/* v27-shift-night */
+/* v28-night-checkout-1am */
 const BALE_TOKEN='666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
 const BALE_CHAT_ID='1163569220';
 const BALE_API='https://tapi.bale.ai/bot'+BALE_TOKEN;
@@ -114,7 +114,23 @@ document.getElementById('registerBtn').onclick=async()=>{
 function updateTime(){const n=new Date(),c=document.getElementById('currentTime'),d=document.getElementById('dateDisplay');if(c)c.textContent=n.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});if(d)d.textContent=n.toLocaleDateString('fa-IR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
 setInterval(updateTime,1000);updateTime();
 
-function isDup(id,type){const r=JSON.parse(localStorage.getItem('attendanceRecords')||'[]'),t=new Date().toLocaleDateString('fa-IR');return!!r.find(x=>x.employeeId===id&&x.date===t&&x.type===type);}
+function faDateFromDate(d){
+  return d.toLocaleDateString('fa-IR');
+}
+function shiftDateKey(hour, minute, shift, baseDate){
+  const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, minute, 0, 0);
+  if(shift === 'night' && hour < 6){
+    d.setDate(d.getDate() - 1);
+  }
+  return faDateFromDate(d);
+}
+function isDup(id, type){
+  const r = JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
+  const now = new Date();
+  const shift = currentShift || 'day';
+  const key = shiftDateKey(now.getHours(), now.getMinutes(), shift, now);
+  return !!r.find(x => x.employeeId===id && x.type===type && (x.shiftDate||x.date)===key && (x.shift||'day')===shift);
+}
 function pad2(n){return (n<10?'0':'')+n;}
 
 function formatOTMinutes(totalMin){
@@ -203,11 +219,20 @@ document.getElementById('timePickerModal').addEventListener('click', (e)=>{
 
 async function recordAttendance(type, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
-  if(isDup(currentEmployee.id,type)){showStatus('⚠️ امروز قبلاً ثبت شده','error');return;}
-  showStatus('در حال ثبت...', 'info');
-  const loc = await ensureLocationPermission();
   const now=new Date();
   const h = Number(hour)|0, m = Number(minute)|0;
+  const shift = currentShift || 'day';
+  let shiftBase = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if(shift === 'night' && h < 6){
+    shiftBase.setDate(shiftBase.getDate() - 1);
+  }
+  const sDate = faDateFromDate(shiftBase);
+  const all0 = JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
+  if(all0.find(x => x.employeeId===currentEmployee.id && x.type===type && (x.shiftDate||x.date)===sDate && (x.shift||'day')===shift)){
+    showStatus('⚠️ برای این شیفت قبلاً ثبت شده','error');return;
+  }
+  showStatus('در حال ثبت...', 'info');
+  const loc = await ensureLocationPermission();
   const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
   const timeFa = pad2(h)+':'+pad2(m);
   const rec={
@@ -216,8 +241,9 @@ async function recordAttendance(type, hour, minute){
     hour:h, minute:m,
     timestamp:selected.getTime(),
     date:now.toLocaleDateString('fa-IR'),
-    dow: selected.getDay(),
-    shift: currentShift || 'day',
+    shiftDate: sDate,
+    dow: shiftBase.getDay(),
+    shift: shift,
     lat: loc ? loc.lat : null, lng: loc ? loc.lng : null
   };
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
@@ -226,8 +252,9 @@ async function recordAttendance(type, hour, minute){
   showStatus('✓ '+tt+' ثبت شد','success');
   displayRecords();
   const locText = formatLocation(loc);
-  const shiftLabel=(currentShift==='night'?'🌙 شیفت شب':'☀️ شیفت روز');
-  sendToBale(em+' '+tt+'\n'+shiftLabel+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date+'\n'+locText);
+  const shiftLabel=(shift==='night'?'🌙 شیفت شب':'☀️ شیفت روز');
+  const nightNote = (shift==='night' && type==='checkout' && h < 6) ? '\n📌 خروج بامداد — شیفت '+sDate : '';
+  sendToBale(em+' '+tt+'\n'+shiftLabel+nightNote+'\n👤 '+currentEmployee.fullName+'\n🔢 '+currentEmployee.personnelId+'\n🕐 '+timeFa+'\n📅 '+rec.date+'\n'+locText);
 }
 
 document.getElementById('checkInBtn').onclick=()=>{
@@ -258,7 +285,7 @@ function displayRecords(){
     return '<div class="record-day-item" style="margin-bottom:10px">'
       +'<p class="day-name">'+tt+' — '+(r.name||'')+' <span style="font-size:12px;opacity:0.8">('+sh+')</span></p>'
       +'<p class="day-id">'+(r.personnelId||'')+'</p>'
-      +'<p class="day-date">'+r.date+' — ساعت <b style="color:'+color+'">'+r.time+'</b></p>'
+      +'<p class="day-date">'+(r.shiftDate&&r.shiftDate!==r.date?r.shiftDate+' → ':'')+r.date+' — ساعت <b style="color:'+color+'">'+r.time+'</b></p>'
       +'<div style="display:flex;gap:8px;margin-top:8px">'
       +'<button type="button" class="btn-info" style="flex:1;padding:8px;font-size:13px;min-width:0" data-edit="'+realIdx+'">✏️ تصحیح ساعت</button>'
       +'<button type="button" class="btn-danger" style="flex:1;padding:8px;font-size:13px;min-width:0" data-del="'+realIdx+'">🗑️ حذف</button>'
@@ -362,7 +389,6 @@ function getDow(rec){
 function overtimeMinutes(checkinHM, checkoutHM, dow, shift){
   if(!checkoutHM && !checkinHM) return 0;
   shift = shift || 'day';
-
   if(shift === 'night'){
     if(!checkinHM) return 0;
     const startMin = checkinHM.h * 60 + checkinHM.m;
@@ -378,7 +404,6 @@ function overtimeMinutes(checkinHM, checkoutHM, dow, shift){
     }
     return ot > 0 ? ot : 0;
   }
-
   if(!checkoutHM) return 0;
   const endMin = checkoutHM.h * 60 + checkoutHM.m;
   if(dow === 4){
@@ -427,10 +452,9 @@ document.getElementById('calculateBtn').onclick=async()=>{
     return ts >= start.getTime() && ts <= now.getTime();
   });
   if(!mine.length){showStatus('در این بازه سابقه‌ای نیست','info');return;}
-
   const g={};
   mine.forEach(r=>{
-    const k = r.date || 'unknown';
+    const k = r.shiftDate || r.date || 'unknown';
     if(!g[k]) g[k] = { ci:null, co:null, dow: getDow(r), shift: r.shift || 'day' };
     if(r.shift) g[k].shift = r.shift;
     if(r.type==='checkin'){
@@ -441,13 +465,11 @@ document.getElementById('calculateBtn').onclick=async()=>{
       if(typeof r.dow === 'number') g[k].dow = r.dow;
     }
   });
-
   let total=0;
   Object.values(g).forEach(x=>{
     total += overtimeMinutes(x.ci, x.co, x.dow, x.shift);
   });
   total = Math.round(total);
-
   let monthName='';
   try{monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{month:'long'}).format(start);}catch(e){monthName='';}
   const otText=formatOTMinutes(total);
