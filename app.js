@@ -1,4 +1,4 @@
-/* v28-night-checkout-1am */
+/* v29-day-picker */
 const BALE_TOKEN='666814160:KRTSKi_cdOSDPUEu6x4tJ5uD9iS_-E5StFQ';
 const BALE_CHAT_ID='1163569220';
 const BALE_API='https://tapi.bale.ai/bot'+BALE_TOKEN;
@@ -132,6 +132,7 @@ function isDup(id, type){
   return !!r.find(x => x.employeeId===id && x.type===type && (x.shiftDate||x.date)===key && (x.shift||'day')===shift);
 }
 function pad2(n){return (n<10?'0':'')+n;}
+function daysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
 
 function formatOTMinutes(totalMin){
   totalMin = Math.max(0, Math.round(Number(totalMin)||0));
@@ -177,11 +178,27 @@ function openTimePicker(type){
   const modal=document.getElementById('timePickerModal');
   const title=document.getElementById('tpTitle');
   const dateLabel=document.getElementById('tpDateLabel');
+  const dayEl=document.getElementById('tpDay');
   const hourEl=document.getElementById('tpHour');
   const minEl=document.getElementById('tpMinute');
   title.textContent = type==='checkin' ? 'ساعت ورود' : 'ساعت خروج';
   const now=new Date();
-  dateLabel.textContent = 'تاریخ امروز: ' + now.toLocaleDateString('fa-IR',{weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const y=now.getFullYear(), mo=now.getMonth(), d=now.getDate();
+  const monthName = now.toLocaleDateString('fa-IR',{month:'long', year:'numeric'});
+  dateLabel.textContent = 'ماه و سال ثابت: ' + monthName + ' — فقط روز را تغییر دهید';
+  const dim = daysInMonth(y, mo);
+  if(dayEl){
+    dayEl.innerHTML='';
+    for(let i=0;i<2;i++){const s=document.createElement('div');s.className='tp-item';s.textContent='';dayEl.appendChild(s);}
+    for(let i=1;i<=dim;i++){
+      const el=document.createElement('div');
+      el.className='tp-item'; el.dataset.val=String(i); el.textContent=pad2(i);
+      dayEl.appendChild(el);
+    }
+    for(let i=0;i<2;i++){const s=document.createElement('div');s.className='tp-item';s.textContent='';dayEl.appendChild(s);}
+    requestAnimationFrame(()=>{ dayEl.scrollTop = (d-1) * 40; });
+    bindWheel(dayEl);
+  }
   buildWheel(hourEl, 24, now.getHours());
   buildWheel(minEl, 60, now.getMinutes());
   bindWheel(hourEl); bindWheel(minEl);
@@ -197,6 +214,8 @@ function closeTimePicker(){
 }
 document.getElementById('tpCancel').onclick=()=>closeTimePicker();
 document.getElementById('tpConfirm').onclick=async()=>{
+  const dayEl=document.getElementById('tpDay');
+  const day = dayEl ? readWheel(dayEl) : new Date().getDate();
   const h=readWheel(document.getElementById('tpHour'));
   const m=readWheel(document.getElementById('tpMinute'));
   const editIdx = pendingEditIndex;
@@ -207,22 +226,27 @@ document.getElementById('tpConfirm').onclick=async()=>{
   pendingAttendanceType=null;
   pendingEditIndex=null;
   if(editIdx!==null && editIdx!==undefined){
-    applyEditTime(editIdx, h, m);
+    applyEditTime(editIdx, day, h, m);
     return;
   }
   if(!type) return;
-  await recordAttendance(type, h, m);
+  await recordAttendance(type, day, h, m);
 };
 document.getElementById('timePickerModal').addEventListener('click', (e)=>{
   if(e.target.id==='timePickerModal') closeTimePicker();
 });
 
-async function recordAttendance(type, hour, minute){
+async function recordAttendance(type, day, hour, minute){
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
   const now=new Date();
+  const y=now.getFullYear(), mo=now.getMonth();
+  let d = Number(day)|0;
+  if(d<1) d=now.getDate();
+  const dim=daysInMonth(y,mo); if(d>dim) d=dim;
   const h = Number(hour)|0, m = Number(minute)|0;
   const shift = currentShift || 'day';
-  let shiftBase = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  let selected=new Date(y, mo, d, h, m, 0, 0);
+  let shiftBase = new Date(y, mo, d, h, m, 0, 0);
   if(shift === 'night' && h < 6){
     shiftBase.setDate(shiftBase.getDate() - 1);
   }
@@ -233,14 +257,13 @@ async function recordAttendance(type, hour, minute){
   }
   showStatus('در حال ثبت...', 'info');
   const loc = await ensureLocationPermission();
-  const selected=new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
   const timeFa = pad2(h)+':'+pad2(m);
   const rec={
     id:Date.now(), employeeId:currentEmployee.id, name:currentEmployee.fullName,
     personnelId:currentEmployee.personnelId, type:type, time:timeFa,
     hour:h, minute:m,
     timestamp:selected.getTime(),
-    date:now.toLocaleDateString('fa-IR'),
+    date:selected.toLocaleDateString('fa-IR'),
     shiftDate: sDate,
     dow: shiftBase.getDay(),
     shift: shift,
@@ -259,12 +282,10 @@ async function recordAttendance(type, hour, minute){
 
 document.getElementById('checkInBtn').onclick=()=>{
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
-  if(isDup(currentEmployee.id,'checkin')){showStatus('⚠️ امروز قبلاً ورود ثبت شده','error');return;}
   openTimePicker('checkin');
 };
 document.getElementById('checkOutBtn').onclick=()=>{
   if(!currentEmployee){showStatus('ابتدا مشخصات را ثبت کنید','error');return;}
-  if(isDup(currentEmployee.id,'checkout')){showStatus('⚠️ امروز قبلاً خروج ثبت شده','error');return;}
   openTimePicker('checkout');
 };
 
@@ -317,10 +338,32 @@ function editRecordTime(index){
   const modal=document.getElementById('timePickerModal');
   const title=document.getElementById('tpTitle');
   const dateLabel=document.getElementById('tpDateLabel');
+  const dayEl=document.getElementById('tpDay');
   const hourEl=document.getElementById('tpHour');
   const minEl=document.getElementById('tpMinute');
   title.textContent = (rec.type==='checkin'?'تصحیح ورود':'تصحیح خروج');
-  dateLabel.textContent = (rec.date||'') + ' — ساعت فعلی: ' + (rec.time||'');
+  let base=rec.timestamp;
+  if(typeof base==='string') base=Date.parse(base);
+  if(typeof base!=='number'||isNaN(base)) base=Date.now();
+  const rd=new Date(base);
+  const y=rd.getFullYear(), mo=rd.getMonth();
+  let day = rd.getDate();
+  const monthName = rd.toLocaleDateString('fa-IR',{month:'long', year:'numeric'});
+  dateLabel.textContent = (rec.date||'') + ' — فقط روز را تغییر دهید | ' + monthName;
+  const dim = daysInMonth(y, mo);
+  if(dayEl){
+    dayEl.innerHTML='';
+    for(let i=0;i<2;i++){const s=document.createElement('div');s.className='tp-item';s.textContent='';dayEl.appendChild(s);}
+    for(let i=1;i<=dim;i++){
+      const el=document.createElement('div');
+      el.className='tp-item'; el.dataset.val=String(i); el.textContent=pad2(i);
+      dayEl.appendChild(el);
+    }
+    for(let i=0;i<2;i++){const s=document.createElement('div');s.className='tp-item';s.textContent='';dayEl.appendChild(s);}
+    if(day<1) day=1; if(day>dim) day=dim;
+    requestAnimationFrame(()=>{ dayEl.scrollTop = (day-1) * 40; });
+    bindWheel(dayEl);
+  }
   buildWheel(hourEl, 24, hm.h);
   buildWheel(minEl, 60, hm.m);
   bindWheel(hourEl); bindWheel(minEl);
@@ -328,25 +371,39 @@ function editRecordTime(index){
   modal.setAttribute('aria-hidden','false');
 }
 
-function applyEditTime(index, h, m){
+function applyEditTime(index, day, h, m){
   if(index===null||index===undefined) return false;
   const all=JSON.parse(localStorage.getItem('attendanceRecords')||'[]');
   if(index<0||index>=all.length){showStatus('رکورد پیدا نشد','error');return true;}
   const rec=all[index];
-  rec.time=pad2(h)+':'+pad2(m);
-  rec.hour=h;
-  rec.minute=m;
   let base=rec.timestamp;
   if(typeof base==='string') base=Date.parse(base);
   if(typeof base!=='number'||isNaN(base)) base=Date.now();
-  const d=new Date(base);
-  d.setHours(h,m,0,0);
-  rec.timestamp=d.getTime();
-  rec.dow=d.getDay();
+  const oldD=new Date(base);
+  const y=oldD.getFullYear(), mo=oldD.getMonth();
+  let d = Number(day)|0;
+  if(d<1) d=oldD.getDate();
+  const dim=daysInMonth(y,mo); if(d>dim) d=dim;
+  h = Number(h)|0; m = Number(m)|0;
+  const nd=new Date(y, mo, d, h, m, 0, 0);
+  rec.time=pad2(h)+':'+pad2(m);
+  rec.hour=h;
+  rec.minute=m;
+  rec.timestamp=nd.getTime();
+  rec.date=nd.toLocaleDateString('fa-IR');
+  rec.dow=nd.getDay();
+  if((rec.shift||'day')==='night' && h < 6){
+    const sb=new Date(y, mo, d, h, m, 0, 0);
+    sb.setDate(sb.getDate()-1);
+    rec.shiftDate=faDateFromDate(sb);
+    rec.dow=sb.getDay();
+  } else {
+    rec.shiftDate=rec.date;
+  }
   all[index]=rec;
   localStorage.setItem('attendanceRecords',JSON.stringify(all));
   displayRecords();
-  showStatus('✓ ساعت به '+rec.time+' تصحیح شد','success');
+  showStatus('✓ به '+rec.date+' ساعت '+rec.time+' تصحیح شد','success');
   return true;
 }
 
