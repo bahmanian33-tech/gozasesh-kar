@@ -61,7 +61,7 @@
       .tp-wheels {
         display: flex; justify-content: center; align-items: center;
         height: 200px; position: relative; direction: ltr;
-        margin: 0 24px; overflow: hidden;
+        margin: 0 16px; overflow: hidden;
       }
       .tp-wheels::before, .tp-wheels::after {
         content: ''; position: absolute; left: 0; right: 0; height: 70px; z-index: 2; pointer-events: none;
@@ -79,15 +79,15 @@
       }
       .tp-col {
         height: 200px; overflow-y: auto; scroll-snap-type: y mandatory;
-        -webkit-overflow-scrolling: touch; width: 72px; z-index: 3; scrollbar-width: none;
+        -webkit-overflow-scrolling: touch; width: 56px; z-index: 3; scrollbar-width: none;
       }
       .tp-col::-webkit-scrollbar { display: none; }
       .tp-item {
         height: 40px; display: flex; align-items: center; justify-content: center;
-        font-size: 22px; color: #e2e8f0; scroll-snap-align: center;
+        font-size: 20px; color: #e2e8f0; scroll-snap-align: center;
         font-variant-numeric: tabular-nums;
       }
-      .tp-sep { font-size: 24px; font-weight: 600; padding: 0 6px; color: #a5b4fc; z-index: 3; }
+      .tp-sep { font-size: 18px; font-weight: 600; padding: 0 4px; color: #a5b4fc; z-index: 3; }
     </style>
 </head>
 <body>
@@ -109,6 +109,8 @@
         <div class="tp-date" id="tpDateLabel">تاریخ: امروز</div>
         <div class="tp-wheels">
           <div class="tp-highlight"></div>
+          <div class="tp-col" id="tpDay"></div>
+          <div class="tp-sep" style="font-size:12px;opacity:0.7">روز</div>
           <div class="tp-col" id="tpHour"></div>
           <div class="tp-sep">:</div>
           <div class="tp-col" id="tpMinute"></div>
